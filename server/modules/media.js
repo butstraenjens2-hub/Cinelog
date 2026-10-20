@@ -144,6 +144,14 @@ function normalizeSeries(item, omdbData = null) {
       name: s.name ?? `Season ${s.season_number}`,
     })),
     networks: (item.networks ?? []).map((n) => n.name),
+    nextEpisodeToAir: item.next_episode_to_air
+      ? {
+          airDate: item.next_episode_to_air.air_date ?? null,
+          seasonNumber: item.next_episode_to_air.season_number ?? null,
+          episodeNumber: item.next_episode_to_air.episode_number ?? null,
+          name: item.next_episode_to_air.name ?? null,
+        }
+      : null,
     source: "tmdb",
   };
 
@@ -803,6 +811,77 @@ router.get("/trailer/:type/:id", async (req, res) => {
     return send(
       res,
       err("TRAILER_UNAVAILABLE", "Trailer unavailable", { source: "tmdb" }),
+      503,
+    );
+  }
+});
+
+/**
+ * GET /api/media/providers/:type/:id?region=BE
+ * Legal "where to watch" metadata from TMDB (data by JustWatch): which
+ * subscription / rent / buy services offer the title in a region.
+ */
+const PROVIDER_REGION_RE = /^[A-Z]{2}$/;
+
+function normalizeProvider(p) {
+  if (!p?.provider_id) return null;
+  return {
+    id: p.provider_id,
+    name: p.provider_name ?? "",
+    logo: imgUrl(p.logo_path, "w92"),
+    priority: p.display_priority ?? 999,
+  };
+}
+
+function providerList(list) {
+  return (list ?? [])
+    .map(normalizeProvider)
+    .filter(Boolean)
+    .sort((a, b) => a.priority - b.priority);
+}
+
+router.get("/providers/:type/:id", async (req, res) => {
+  const gate = checkTmdb(res);
+  if (gate) return gate;
+
+  const type = req.params.type === "movie" ? "movie" : "tv";
+  const id = parseInt(req.params.id, 10);
+  if (!id)
+    return send(res, err("INVALID_ID", "Invalid ID", { source: "tmdb" }), 400);
+  const regionRaw = String(req.query.region || "BE").toUpperCase();
+  const region = PROVIDER_REGION_RE.test(regionRaw) ? regionRaw : "BE";
+
+  const key = `media_v2_providers_${type}_${id}_${region}`;
+
+  try {
+    const { value, isCached } = await cache.getOrFetch(
+      key,
+      TTL.MEDIA_DETAIL,
+      async () => {
+        const data = await tmdb(
+          `/${type}/${id}/watch/providers`,
+          {},
+          "tmdb:watch-providers",
+        );
+        const entry = data?.results?.[region] ?? null;
+        return {
+          region,
+          link: entry?.link ?? null,
+          flatrate: providerList(entry?.flatrate),
+          free: providerList([...(entry?.free ?? []), ...(entry?.ads ?? [])]),
+          rent: providerList(entry?.rent),
+          buy: providerList(entry?.buy),
+        };
+      },
+    );
+    return send(res, ok(value, { source: "tmdb", isCached }));
+  } catch (e) {
+    log.error("providers error", { type, id, message: e.message });
+    return send(
+      res,
+      err("PROVIDERS_UNAVAILABLE", "Watch providers unavailable", {
+        source: "tmdb",
+      }),
       503,
     );
   }

@@ -64,6 +64,7 @@ function ThemedShell() {
           <Stack.Screen name="settings" />
           <Stack.Screen name="addons" />
           <Stack.Screen name="legal" />
+          <Stack.Screen name="import" />
           <Stack.Screen
             name="auth"
             options={{ animation: "slide_from_bottom" }}

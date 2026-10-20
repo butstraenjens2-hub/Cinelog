@@ -124,6 +124,20 @@ export default function SettingsScreen() {
             </View>
           </SettingsSection>
 
+          <SettingsSection title={t("Import")} icon="download-outline">
+            <SettingsRow
+              label={t("Import from Letterboxd")}
+              hint={t("Bring in your watched films, ratings and watchlist.")}
+            />
+            <Button
+              label={t("Start import")}
+              icon="chevron-forward"
+              variant="secondary"
+              size="sm"
+              onPress={() => router.push("/import" as never)}
+            />
+          </SettingsSection>
+
           <SettingsSection title={t("Addons")} icon="rocket-outline">
             <SettingsRow
               label={t("Streaming sources")}

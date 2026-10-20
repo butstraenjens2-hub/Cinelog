@@ -18,7 +18,6 @@ import type {
   LibraryEntryRef,
   MediaId,
   MediaSummary,
-  MediaType,
   Movie,
   Series,
   UserRating,
@@ -33,6 +32,8 @@ const STORAGE_KEY = "cinelog.library.v1";
 /** Fallback runtime (minutes) used for hours-watched when TMDB has none. */
 const ASSUMED_MOVIE_RUNTIME = 110;
 const ASSUMED_EPISODE_RUNTIME = 45;
+/** Large enough for a full Letterboxd import, small enough for AsyncStorage. */
+const HISTORY_LIMIT = 1000;
 
 export type WatchlistSort =
   "recently_added" | "rating" | "release_date" | "alphabetical";
@@ -92,6 +93,17 @@ export interface LibraryState {
 
   clearHistory: () => void;
   resetLibrary: () => void;
+
+  /** Bulk import (e.g. Letterboxd); keeps original dates, never duplicates. */
+  importEntries: (entries: ImportEntry[]) => void;
+}
+
+export interface ImportEntry {
+  item: LibraryEntryRef;
+  kind: "watched" | "rating" | "watchlist";
+  /** ISO date from the source; defaults to now. */
+  date?: string | null;
+  score?: number | null;
 }
 
 function episodeKey(seasonNumber: number, episodeNumber: number): string {
@@ -136,7 +148,7 @@ function upsertHistory(
   entry: WatchHistoryItem,
 ): WatchHistoryItem[] {
   const rest = history.filter((item) => item.id !== entry.id);
-  return [entry, ...rest].slice(0, 300);
+  return [entry, ...rest].slice(0, HISTORY_LIMIT);
 }
 
 export const useLibrary = create<LibraryState>()(
@@ -389,6 +401,47 @@ export const useLibrary = create<LibraryState>()(
       clearRecentSearches: () => set({ recentSearches: [] }),
 
       clearHistory: () => set({ history: [], progress: {}, episodes: {} }),
+
+      importEntries: (entries) =>
+        set((state) => {
+          const history = [...state.history];
+          const historyIds = new Set(history.map((h) => h.id));
+          const ratings = { ...state.ratings };
+          const watchlist = [...state.watchlist];
+          const watchlistIds = new Set(watchlist.map((w) => w.id));
+          for (const entry of entries) {
+            const ref = toLibraryRef(entry.item);
+            const stamp = entry.date
+              ? new Date(entry.date).toISOString()
+              : new Date().toISOString();
+            if (entry.kind === "watched" && !historyIds.has(ref.id)) {
+              historyIds.add(ref.id);
+              history.push({
+                ...ref,
+                state: "watched",
+                watchedAt: stamp,
+                minutes: creditedMinutes(ref, false),
+              });
+            }
+            if (entry.kind === "rating" && entry.score && !ratings[ref.id]) {
+              ratings[ref.id] = {
+                ...ref,
+                score: Math.min(10, Math.max(1, Math.round(entry.score))),
+                ratedAt: stamp,
+              };
+            }
+            if (
+              entry.kind === "watchlist" &&
+              !watchlistIds.has(ref.id) &&
+              !historyIds.has(ref.id)
+            ) {
+              watchlistIds.add(ref.id);
+              watchlist.push({ ...ref, addedAt: stamp });
+            }
+          }
+          history.sort((a, b) => Date.parse(b.watchedAt) - Date.parse(a.watchedAt));
+          return { history: history.slice(0, HISTORY_LIMIT), ratings, watchlist };
+        }),
 
       resetLibrary: () =>
         set({

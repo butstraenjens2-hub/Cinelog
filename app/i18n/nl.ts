@@ -374,4 +374,7 @@ export const NL: Record<string, string> = {
   "Not currently available on streaming services in Belgium.": "Momenteel niet beschikbaar bij streamingdiensten in België.",
   "View all offers": "Alle aanbieders bekijken",
   "Data by JustWatch via TMDB": "Gegevens van JustWatch via TMDB",
+  "Up Next": "Volgende aflevering",
+  "The next episode of the shows you follow": "De volgende aflevering van de series die je volgt",
+  "Mark {{code}} of {{title}} as watched": "{{code}} van {{title}} markeren als gezien",
 };

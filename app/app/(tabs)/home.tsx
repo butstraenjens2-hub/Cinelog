@@ -9,6 +9,7 @@ import { Carousel } from "@/components/media/Carousel";
 import { ContinueWatchingCard } from "@/components/media/ContinueWatchingCard";
 import { HeroBanner } from "@/components/media/HeroBanner";
 import { PosterCard } from "@/components/media/PosterCard";
+import { UpNextCard } from "@/components/media/UpNextCard";
 import { MobileHeader } from "@/components/navigation/MobileHeader";
 import { GenrePill } from "@/components/ui/GenrePill";
 import { Screen } from "@/components/ui/Screen";
@@ -17,6 +18,8 @@ import { FONTS, SPACING } from "@/constants/theme";
 import { makeStyles } from "@/theme";
 import { useResponsive } from "@/hooks/useResponsive";
 import { useTrailerPlayer } from "@/hooks/useTrailerPlayer";
+import { useTrackedSeries } from "@/hooks/useTrackedSeries";
+import type { UpNextEntry } from "@/lib/cinelog/upNext";
 import { GENRES } from "@/lib/cinelog/genres";
 import { openTitle } from "@/lib/cinelog/navigation";
 import {
@@ -43,6 +46,10 @@ function hasValidPoster(item: { poster: string | null }): boolean {
   const lowered = String(item.poster).toLowerCase();
   return !lowered.includes("null") && !lowered.includes("undefined");
 }
+
+const upNextKey = (entry: UpNextEntry) =>
+  `${entry.series.id}:${entry.seasonNumber}:${entry.episodeNumber}`;
+const mediaKey = (item: { id: string }) => item.id;
 
 export default function HomeScreen() {
   const t = useT();
@@ -204,6 +211,36 @@ export default function HomeScreen() {
     [railPosterWidth, openTrailer],
   );
 
+  const tracked = useTrackedSeries(secondaryRailsEnabled);
+  const toggleEpisodeWatched = useLibrary((state) => state.toggleEpisodeWatched);
+  const openUpNext = useCallback((entry: UpNextEntry) => {
+    router.push({
+      pathname: "/series/[id]",
+      params: {
+        id: String(entry.series.tmdbId),
+        season: String(entry.seasonNumber),
+        episode: String(entry.episodeNumber),
+      },
+    } as never);
+  }, []);
+  const markUpNextWatched = useCallback(
+    (entry: UpNextEntry) => {
+      toggleEpisodeWatched(entry.series, entry.seasonNumber, entry.episodeNumber);
+    },
+    [toggleEpisodeWatched],
+  );
+  const renderUpNext = useCallback(
+    (entry: UpNextEntry) => (
+      <UpNextCard
+        entry={entry}
+        width={railPosterWidth}
+        onOpen={openUpNext}
+        onMarkWatched={markUpNextWatched}
+      />
+    ),
+    [railPosterWidth, openUpNext, markUpNextWatched],
+  );
+
   const continueCardWidth = isMobile ? Math.min(width - gutter * 2, 300) : 320;
 
   const heroUnavailable = !hero && !heroLoading;
@@ -287,6 +324,18 @@ export default function HomeScreen() {
             />
           ) : null}
 
+          {tracked.upNext.length > 0 ? (
+            <Carousel
+              title={t("Up Next")}
+              subtitle={t("The next episode of the shows you follow")}
+              items={tracked.upNext}
+              isLoading={false}
+              itemWidth={railPosterWidth}
+              keyExtractor={upNextKey}
+              renderItem={renderUpNext}
+            />
+          ) : null}
+
           {becauseRail ? (
             <Carousel
               title={t("Because You Watched {{title}}", {
@@ -295,7 +344,7 @@ export default function HomeScreen() {
               items={becauseRail.items}
               isLoading={false}
               itemWidth={railPosterWidth}
-              keyExtractor={(item) => item.id}
+              keyExtractor={mediaKey}
               renderItem={renderPoster}
             />
           ) : null}
@@ -305,7 +354,7 @@ export default function HomeScreen() {
             items={trendingItems}
             isLoading={trending.isLoading}
             itemWidth={railPosterWidth}
-            keyExtractor={(item) => item.id}
+            keyExtractor={mediaKey}
             renderItem={renderPoster}
           />
 
@@ -314,7 +363,7 @@ export default function HomeScreen() {
             items={popularMovieItems}
             isLoading={popularMovies.isLoading}
             itemWidth={railPosterWidth}
-            keyExtractor={(item) => item.id}
+            keyExtractor={mediaKey}
             renderItem={renderPoster}
             onSeeAll={() => router.navigate("/(tabs)/movies")}
           />
@@ -324,7 +373,7 @@ export default function HomeScreen() {
             items={popularSeriesItems}
             isLoading={popularSeries.isLoading}
             itemWidth={railPosterWidth}
-            keyExtractor={(item) => item.id}
+            keyExtractor={mediaKey}
             renderItem={renderPoster}
             onSeeAll={() => router.navigate("/(tabs)/series")}
           />
@@ -335,7 +384,7 @@ export default function HomeScreen() {
             items={newReleaseItems}
             isLoading={secondaryRailsEnabled && newReleases.isLoading}
             itemWidth={railPosterWidth}
-            keyExtractor={(item) => item.id}
+            keyExtractor={mediaKey}
             renderItem={renderPoster}
           />
 
@@ -347,7 +396,7 @@ export default function HomeScreen() {
               (topRatedMovies.isLoading || topRatedSeries.isLoading)
             }
             itemWidth={railPosterWidth}
-            keyExtractor={(item) => item.id}
+            keyExtractor={mediaKey}
             renderItem={renderPoster}
           />
 
@@ -361,7 +410,7 @@ export default function HomeScreen() {
             items={recommendedItems}
             isLoading={candidates.length === 0}
             itemWidth={railPosterWidth}
-            keyExtractor={(item) => item.id}
+            keyExtractor={mediaKey}
             renderItem={renderPoster}
           />
 

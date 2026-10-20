@@ -75,9 +75,13 @@ export default function SeriesDetailScreen() {
   // Default to the first real season once the detail payload lands.
   useEffect(() => {
     if (selectedSeason === null && series?.seasons.length) {
-      setSelectedSeason(series.seasons[0].seasonNumber);
+      // Deep links (e.g. the home "Up next" rail) can preselect a season.
+      const requested = params.season
+        ? series.seasons.find((s) => s.seasonNumber === seasonFromParams)
+        : undefined;
+      setSelectedSeason((requested ?? series.seasons[0]).seasonNumber);
     }
-  }, [series?.seasons, selectedSeason]);
+  }, [series?.seasons, selectedSeason, params.season, seasonFromParams]);
 
   useEffect(() => {
     setArmedEpisodeKey(null);

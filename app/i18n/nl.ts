@@ -406,4 +406,6 @@ export const NL: Record<string, string> = {
   "Import": "Importeren",
   "Bring in your watched films, ratings and watchlist.": "Haal je geziene films, beoordelingen en kijklijst binnen.",
   "Start import": "Import starten",
+  "Because you liked {{title}}": "Omdat je {{title}} goed vond",
+  "You rated it {{score}}/10": "Je gaf het een {{score}}/10",
 };

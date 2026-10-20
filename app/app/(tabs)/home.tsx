@@ -19,6 +19,7 @@ import { makeStyles } from "@/theme";
 import { useResponsive } from "@/hooks/useResponsive";
 import { useTrailerPlayer } from "@/hooks/useTrailerPlayer";
 import { useTrackedSeries } from "@/hooks/useTrackedSeries";
+import { useBecauseYouLiked } from "@/hooks/useBecauseYouLiked";
 import type { UpNextEntry } from "@/lib/cinelog/upNext";
 import { GENRES } from "@/lib/cinelog/genres";
 import { openTitle } from "@/lib/cinelog/navigation";
@@ -212,6 +213,7 @@ export default function HomeScreen() {
   );
 
   const tracked = useTrackedSeries(secondaryRailsEnabled);
+  const liked = useBecauseYouLiked(secondaryRailsEnabled);
   const toggleEpisodeWatched = useLibrary((state) => state.toggleEpisodeWatched);
   const openUpNext = useCallback((entry: UpNextEntry) => {
     router.push({
@@ -333,6 +335,18 @@ export default function HomeScreen() {
               itemWidth={railPosterWidth}
               keyExtractor={upNextKey}
               renderItem={renderUpNext}
+            />
+          ) : null}
+
+          {liked.seed && (liked.items.length > 0 || liked.isLoading) ? (
+            <Carousel
+              title={t("Because you liked {{title}}", { title: liked.seed.title })}
+              subtitle={t("You rated it {{score}}/10", { score: liked.seed.score })}
+              items={liked.items}
+              isLoading={liked.isLoading}
+              itemWidth={railPosterWidth}
+              keyExtractor={mediaKey}
+              renderItem={renderPoster}
             />
           ) : null}
 

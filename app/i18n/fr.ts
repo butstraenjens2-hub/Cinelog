@@ -408,4 +408,6 @@ export const FR: Record<string, string> = {
   "Import": "Importer",
   "Bring in your watched films, ratings and watchlist.": "Récupérez vos films vus, notes et liste.",
   "Start import": "Lancer l'import",
+  "Because you liked {{title}}": "Parce que vous avez aimé {{title}}",
+  "You rated it {{score}}/10": "Vous lui avez donné {{score}}/10",
 };

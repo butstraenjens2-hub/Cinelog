@@ -408,4 +408,6 @@ export const NL: Record<string, string> = {
   "Start import": "Import starten",
   "Because you liked {{title}}": "Omdat je {{title}} goed vond",
   "You rated it {{score}}/10": "Je gaf het een {{score}}/10",
+  "Available offline": "Offline beschikbaar",
+  "Offline": "Offline",
 };

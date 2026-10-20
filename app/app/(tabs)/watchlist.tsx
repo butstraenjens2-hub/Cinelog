@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { Text, View } from "react-native";
 import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
 import { useT } from "@/i18n";
 import { SeoHead } from "@/components/SeoHead";
@@ -17,6 +18,7 @@ import { useResponsive } from "@/hooks/useResponsive";
 import { openTitle } from "@/lib/cinelog/navigation";
 import type { WatchlistItem } from "@/lib/cinelog/types";
 import { useAuth } from "@/store/auth-store";
+import { useOffline } from "@/store/offline-store";
 import {
   sortWatchlist,
   useLibrary,
@@ -70,6 +72,7 @@ export default function WatchlistScreen() {
     [watchlist],
   );
 
+  const offlineReady = useOffline((state) => state.ready);
   const renderWatchlistCell = useCallback(
     (item: WatchlistItem, posterWidth: number) => (
       <View style={{ width: posterWidth }}>
@@ -78,6 +81,16 @@ export default function WatchlistScreen() {
           width={posterWidth}
           onPress={() => openTitle(item)}
         />
+        {offlineReady[item.id] ? (
+          <View
+            style={styles.offlineBadge}
+            accessible
+            accessibilityLabel={t("Available offline")}
+          >
+            <Ionicons name="cloud-done" size={12} color="#fff" />
+            <Text style={styles.offlineText}>{t("Offline")}</Text>
+          </View>
+        ) : null}
         <View style={styles.removeSlot}>
           <IconButton
             icon="trash-outline"
@@ -88,7 +101,7 @@ export default function WatchlistScreen() {
         </View>
       </View>
     ),
-    [removeFromWatchlist, styles.removeSlot, t],
+    [removeFromWatchlist, styles, t, offlineReady],
   );
 
   const tabsWithCounts = TABS.map((option) => ({
@@ -207,6 +220,23 @@ const useStyles = makeStyles((c, t) => ({
     fontSize: 14,
     color: c.textSecondary,
     marginTop: -SPACING.sm,
+  },
+  offlineBadge: {
+    position: "absolute",
+    top: SPACING.sm,
+    left: SPACING.sm,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 999,
+    backgroundColor: "rgba(0,0,0,0.65)",
+  },
+  offlineText: {
+    fontFamily: FONTS.semibold,
+    fontSize: 10,
+    color: "#fff",
   },
   removeSlot: {
     position: "absolute",

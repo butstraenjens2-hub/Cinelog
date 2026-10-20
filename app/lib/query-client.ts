@@ -47,7 +47,9 @@ export const queryClient = new QueryClient({
   },
 });
 
-const PERSIST_MAX_AGE = 24 * 60 * 60 * 1000;
+/** Watchlist details kept for offline reading stay cached this long. */
+export const OFFLINE_GC_TIME = 7 * 24 * 60 * 60 * 1000;
+const PERSIST_MAX_AGE = OFFLINE_GC_TIME;
 
 /** Only list and detail metadata is persisted; search results and anything
  * outside the "media" namespace stay in memory only. */

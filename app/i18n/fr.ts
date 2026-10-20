@@ -410,4 +410,6 @@ export const FR: Record<string, string> = {
   "Start import": "Lancer l'import",
   "Because you liked {{title}}": "Parce que vous avez aimé {{title}}",
   "You rated it {{score}}/10": "Vous lui avez donné {{score}}/10",
+  "Available offline": "Disponible hors ligne",
+  "Offline": "Hors ligne",
 };

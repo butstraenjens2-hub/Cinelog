@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { Text, View } from "react-native";
 import { router } from "expo-router";
 
@@ -7,15 +7,15 @@ import { SeoHead } from "@/components/SeoHead";
 import { Footer } from "@/components/layout/Footer";
 import { FilterBar, type FilterOption } from "@/components/media/FilterBar";
 import { PosterCard } from "@/components/media/PosterCard";
-import { usePosterMetrics } from "@/components/media/PosterGrid";
+import { PosterGridScreen } from "@/components/media/PosterGrid";
 import { MobileHeader } from "@/components/navigation/MobileHeader";
 import { IconButton } from "@/components/ui/Button";
-import { Screen } from "@/components/ui/Screen";
 import { EmptyState } from "@/components/ui/States";
 import { FONTS, SPACING } from "@/constants/theme";
 import { makeStyles } from "@/theme";
 import { useResponsive } from "@/hooks/useResponsive";
 import { openTitle } from "@/lib/cinelog/navigation";
+import type { WatchlistItem } from "@/lib/cinelog/types";
 import { useAuth } from "@/store/auth-store";
 import {
   sortWatchlist,
@@ -42,7 +42,6 @@ export default function WatchlistScreen() {
   const t = useT();
   const styles = useStyles();
   const { isMobile, gutter } = useResponsive();
-  const { posterWidth } = usePosterMetrics();
   const user = useAuth((state) => state.user);
 
   const watchlist = useLibrary((state) => state.watchlist);
@@ -71,6 +70,27 @@ export default function WatchlistScreen() {
     [watchlist],
   );
 
+  const renderWatchlistCell = useCallback(
+    (item: WatchlistItem, posterWidth: number) => (
+      <View style={{ width: posterWidth }}>
+        <PosterCard
+          item={item}
+          width={posterWidth}
+          onPress={() => openTitle(item)}
+        />
+        <View style={styles.removeSlot}>
+          <IconButton
+            icon="trash-outline"
+            label={t("Remove {{title}} from your watchlist", { title: item.title })}
+            onPress={() => removeFromWatchlist(item.id)}
+            size={30}
+          />
+        </View>
+      </View>
+    ),
+    [removeFromWatchlist, styles.removeSlot, t],
+  );
+
   const tabsWithCounts = TABS.map((option) => ({
     ...option,
     count: counts[option.value],
@@ -82,8 +102,10 @@ export default function WatchlistScreen() {
         title={t("Watchlist")}
         description="Everything you saved to watch later, sorted the way you want it."
       />
-      <Screen
+      <PosterGridScreen
         reserveBottomNav
+        items={items}
+        renderItem={renderWatchlistCell}
         header={
           isMobile ? (
             <MobileHeader
@@ -95,7 +117,8 @@ export default function WatchlistScreen() {
             />
           ) : null
         }
-      >
+        listHeader={
+          <>
         <View style={styles.head}>
           {isMobile ? null : (
             <Text
@@ -158,30 +181,11 @@ export default function WatchlistScreen() {
             )}
             compact
           />
-        ) : (
-          <View style={[styles.grid, { paddingHorizontal: gutter }]}>
-            {items.map((item) => (
-              <View key={item.id} style={{ width: posterWidth }}>
-                <PosterCard
-                  item={item}
-                  width={posterWidth}
-                  onPress={() => openTitle(item)}
-                />
-                <View style={styles.removeSlot}>
-                  <IconButton
-                    icon="trash-outline"
-                    label={`Remove ${item.title} from your watchlist`}
-                    onPress={() => removeFromWatchlist(item.id)}
-                    size={30}
-                  />
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
-
-        <Footer />
-      </Screen>
+        ) : null}
+          </>
+        }
+        listFooter={<Footer />}
+      />
     </>
   );
 }
@@ -203,11 +207,6 @@ const useStyles = makeStyles((c, t) => ({
     fontSize: 14,
     color: c.textSecondary,
     marginTop: -SPACING.sm,
-  },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: SPACING.md,
   },
   removeSlot: {
     position: "absolute",

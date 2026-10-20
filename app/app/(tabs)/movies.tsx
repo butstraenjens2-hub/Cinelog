@@ -6,9 +6,8 @@ import { useT } from "@/i18n";
 import { SeoHead } from "@/components/SeoHead";
 import { Footer } from "@/components/layout/Footer";
 import { FilterBar, type FilterOption } from "@/components/media/FilterBar";
-import { PosterGrid } from "@/components/media/PosterGrid";
+import { PosterGridScreen } from "@/components/media/PosterGrid";
 import { MobileHeader } from "@/components/navigation/MobileHeader";
-import { Screen } from "@/components/ui/Screen";
 import { EmptyState, ErrorState } from "@/components/ui/States";
 import { FONTS, SPACING } from "@/constants/theme";
 import { makeStyles } from "@/theme";
@@ -69,8 +68,12 @@ export default function MoviesScreen() {
         title={t("Movies")}
         description="Browse popular, trending, top rated, now playing and upcoming films by genre."
       />
-      <Screen
+      <PosterGridScreen
         reserveBottomNav
+        items={browse.isError && items.length === 0 ? [] : items}
+        onSelect={openTitle}
+        isLoading={browse.isLoading}
+        isLoadingMore={browse.isLoadingMore}
         onEndReached={browse.canLoadMore ? browse.loadMore : undefined}
         header={
           isMobile ? (
@@ -83,7 +86,8 @@ export default function MoviesScreen() {
             />
           ) : null
         }
-      >
+        listHeader={
+          <>
         <View style={styles.head}>
           {isMobile ? null : (
             <Text
@@ -129,17 +133,12 @@ export default function MoviesScreen() {
             title={t("No films here yet")}
             message={t("Try another collection or genre to keep discovering.")}
           />
-        ) : (
-          <PosterGrid
-            items={items}
-            onSelect={openTitle}
-            isLoading={browse.isLoading}
-            isLoadingMore={browse.isLoadingMore}
-          />
-        )}
+        ) : null}
 
-        <Footer />
-      </Screen>
+          </>
+        }
+        listFooter={<Footer />}
+      />
     </>
   );
 }

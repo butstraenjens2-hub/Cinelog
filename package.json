@@ -42,7 +42,7 @@
     "postinstall": "patch-package || true && node scripts/apply-nested-patches.mjs || true"
   },
   "devDependencies": {
-    "babel-preset-expo": "^55.0.13",
+    "babel-preset-expo": "~54.0.12",
     "concurrently": "^8.2.2",
     "patch-package": "^8.0.0"
   },

@@ -13,6 +13,7 @@ import { Footer } from "@/components/layout/Footer";
 import { SeoHead } from "@/components/SeoHead";
 import { Carousel } from "@/components/media/Carousel";
 import { CastCard } from "@/components/media/CastCard";
+import { WhereToWatch } from "@/components/media/WhereToWatch";
 import { PosterCard } from "@/components/media/PosterCard";
 import { TitleHero } from "@/components/media/TitleHero";
 import { FloatingBackButton } from "@/components/navigation/MobileHeader";
@@ -178,6 +179,8 @@ export default function MovieDetailScreen() {
               voteCount={movie.voteCount}
             />
           </View>
+
+          <WhereToWatch type="movie" tmdbId={movie.tmdbId} gutter={gutter} />
 
           {cast.length > 0 ? (
             <Carousel

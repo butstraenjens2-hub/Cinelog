@@ -25,6 +25,7 @@ import {
   fetchSeriesList,
   fetchTrending,
   searchMedia,
+  fetchWatchProviders,
 } from "@/lib/cinelog/api";
 import type {
   MediaSummary,
@@ -51,6 +52,8 @@ export const mediaKeys = {
   person: (id: number) => ["media", "person", id] as const,
   trailer: (type: MediaType, id: number) =>
     ["media", "trailer", type, id] as const,
+  providers: (type: MediaType, id: number, region: string) =>
+    ["media", "providers", type, id, region] as const,
 };
 
 function nextPageParam(last: PagedResult<MediaSummary>) {
@@ -330,4 +333,20 @@ export function useInterleaved(left: MediaSummary[], right: MediaSummary[]) {
     }
     return mixed;
   }, [left, right]);
+}
+
+// ── Where to watch ───────────────────────────────────────────────────────────
+
+export function useWatchProviders(
+  type: MediaType,
+  tmdbId: number | null,
+  region = "BE",
+) {
+  return useQuery({
+    queryKey: mediaKeys.providers(type, tmdbId ?? 0, region),
+    queryFn: () => fetchWatchProviders(type, tmdbId as number, region),
+    enabled: typeof tmdbId === "number" && tmdbId > 0,
+    staleTime: STALE.long,
+    retry: 1,
+  });
 }

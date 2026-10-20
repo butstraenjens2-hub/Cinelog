@@ -366,4 +366,12 @@ export const NL: Record<string, string> = {
   "Manage Torrentio, Comet, Meteor and automatic best-source playback.":
     "Beheer Torrentio, Comet, Meteor en automatisch afspelen van de beste bron.",
   "Open Addons": "Add-ons openen",
+  "Where to watch?": "Waar kijken?",
+  "Stream#provider": "Streamen",
+  "Free#provider": "Gratis",
+  "Rent#provider": "Huren",
+  "Buy#provider": "Kopen",
+  "Not currently available on streaming services in Belgium.": "Momenteel niet beschikbaar bij streamingdiensten in België.",
+  "View all offers": "Alle aanbieders bekijken",
+  "Data by JustWatch via TMDB": "Gegevens van JustWatch via TMDB",
 };

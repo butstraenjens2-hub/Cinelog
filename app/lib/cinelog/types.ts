@@ -70,6 +70,31 @@ export interface Series extends MediaSummary {
   episodeRuntime: number;
   lastAirDate: string | null;
   seasons: SeasonSummary[];
+  /** Next scheduled episode from TMDB, when the show is still airing. */
+  nextEpisode: NextEpisode | null;
+}
+
+export interface NextEpisode {
+  airDate: string | null;
+  seasonNumber: number;
+  episodeNumber: number;
+  name: string;
+}
+
+export interface WatchProvider {
+  id: number;
+  name: string;
+  logo: string | null;
+}
+
+/** Legal "where to watch" offers for one region (TMDB / JustWatch data). */
+export interface WatchProviders {
+  region: string;
+  link: string | null;
+  flatrate: WatchProvider[];
+  free: WatchProvider[];
+  rent: WatchProvider[];
+  buy: WatchProvider[];
 }
 
 export type MediaDetail = Movie | Series;

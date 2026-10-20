@@ -32,6 +32,9 @@ import type {
   SeriesListKey,
   TitleDetail,
   Trailer,
+  NextEpisode,
+  WatchProvider,
+  WatchProviders,
 } from "@/lib/cinelog/types";
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
@@ -450,6 +453,7 @@ function parseSeriesDetail(input: unknown): TitleDetail<Series> {
     episodeRuntime: num(raw.episodeRuntime) || num(runtimes[0]),
     lastAirDate: str(raw.lastAirDate ?? raw.last_air_date) || null,
     seasons: parseSeasonSummaries(raw.seasons),
+    nextEpisode: parseNextEpisode(raw.nextEpisodeToAir ?? raw.next_episode_to_air),
   };
 
   return {
@@ -465,6 +469,20 @@ function parseSeriesDetail(input: unknown): TitleDetail<Series> {
       parseSummaries(nested(raw, "recommendations"), "series"),
       false,
     ),
+  };
+}
+
+function parseNextEpisode(input: unknown): NextEpisode | null {
+  if (!input || typeof input !== "object") return null;
+  const raw = input as RawRecord;
+  const seasonNumber = num(raw.seasonNumber ?? raw.season_number);
+  const episodeNumber = num(raw.episodeNumber ?? raw.episode_number);
+  if (!seasonNumber || !episodeNumber) return null;
+  return {
+    airDate: str(raw.airDate ?? raw.air_date) || null,
+    seasonNumber,
+    episodeNumber,
+    name: str(raw.name),
   };
 }
 
@@ -899,3 +917,56 @@ export async function fetchPrimaryTrailer(
 }
 
 export { MIN_VOTES };
+
+// ── Where to watch ───────────────────────────────────────────────────────────
+
+function parseProviders(input: unknown): WatchProvider[] {
+  if (!Array.isArray(input)) return [];
+  const seen = new Set<number>();
+  const out: WatchProvider[] = [];
+  for (const entry of input) {
+    const raw = (entry ?? {}) as RawRecord;
+    const id = num(raw.id ?? raw.provider_id);
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    out.push({
+      id,
+      name: str(raw.name ?? raw.provider_name),
+      logo: image(raw.logo ?? raw.logo_path, "w92"),
+    });
+  }
+  return out;
+}
+
+function parseWatchProviders(raw: RawRecord, region: string): WatchProviders {
+  return {
+    region,
+    link: str(raw.link) || null,
+    flatrate: parseProviders(raw.flatrate),
+    free: parseProviders([
+      ...((raw.free as unknown[]) ?? []),
+      ...((raw.ads as unknown[]) ?? []),
+    ]),
+    rent: parseProviders(raw.rent),
+    buy: parseProviders(raw.buy),
+  };
+}
+
+/** Legal streaming/rent/buy availability for a title in `region` (default BE). */
+export async function fetchWatchProviders(
+  type: MediaType,
+  tmdbId: number,
+  region = "BE",
+): Promise<WatchProviders> {
+  if (hasDirectTmdbKey) {
+    const data = await tmdbDirect<RawRecord>(
+      `/${type === "movie" ? "movie" : "tv"}/${tmdbId}/watch/providers`,
+    );
+    const results = (data.results as RawRecord | undefined) ?? {};
+    return parseWatchProviders((results[region] as RawRecord) ?? {}, region);
+  }
+  const data = await apiData<RawRecord>(
+    `/api/media/providers/${type === "movie" ? "movie" : "series"}/${tmdbId}${query({ region })}`,
+  );
+  return parseWatchProviders(data ?? {}, region);
+}

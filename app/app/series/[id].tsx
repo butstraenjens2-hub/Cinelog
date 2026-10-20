@@ -13,6 +13,7 @@ import { Footer } from "@/components/layout/Footer";
 import { SeoHead } from "@/components/SeoHead";
 import { Carousel } from "@/components/media/Carousel";
 import { CastCard } from "@/components/media/CastCard";
+import { WhereToWatch } from "@/components/media/WhereToWatch";
 import { EpisodeCard } from "@/components/media/EpisodeCard";
 import { PosterCard } from "@/components/media/PosterCard";
 import { TitleHero } from "@/components/media/TitleHero";
@@ -435,6 +436,8 @@ export default function SeriesDetailScreen() {
               </View>
             </View>
           ) : null}
+
+          <WhereToWatch type="series" tmdbId={series.tmdbId} gutter={gutter} />
 
           {cast.length > 0 ? (
             <Carousel

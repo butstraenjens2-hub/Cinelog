@@ -51,7 +51,7 @@ const PERSIST_MAX_AGE = 24 * 60 * 60 * 1000;
 
 /** Only list and detail metadata is persisted; search results and anything
  * outside the "media" namespace stay in memory only. */
-const PERSISTED_SECTIONS = new Set(["trending", "movies", "series", "movie", "person", "trailer"]);
+const PERSISTED_SECTIONS = new Set(["trending", "movies", "series", "movie", "person", "trailer", "providers"]);
 
 export function shouldPersistQuery(query: Query): boolean {
   if (query.state.status !== "success") return false;

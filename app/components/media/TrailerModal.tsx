@@ -10,6 +10,7 @@
 import React from "react";
 import {
   ActivityIndicator,
+  AppState,
   Linking,
   Modal,
   Platform,
@@ -18,6 +19,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import * as ScreenOrientation from "expo-screen-orientation";
 
 import { useT } from "@/i18n";
 import { ErrorState } from "@/components/ui/States";
@@ -30,6 +32,22 @@ import YoutubePlayer from "react-native-youtube-iframe";
 import { WebView } from "react-native-webview";
 
 const EMBED_ORIGIN = "https://www.youtube-nocookie.com";
+
+/** Only a failure of the HTML shell itself (not a sub-resource) is fatal. */
+function isMainFrameEvent(url: unknown): boolean {
+  const target = String(url ?? "");
+  if (!target || target.startsWith("about:")) return true;
+  return target === EMBED_ORIGIN || target === `${EMBED_ORIGIN}/`;
+}
+
+/** Let fullscreen trailers rotate to landscape; restore portrait afterwards. */
+function setTrailerFullscreen(fullscreen: boolean): void {
+  if (Platform.OS === "web") return;
+  const action = fullscreen
+    ? ScreenOrientation.unlockAsync()
+    : ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+  action.catch(() => undefined);
+}
 
 function embedUrl(videoKey: string, origin?: string): string {
   const params = new URLSearchParams({
@@ -148,12 +166,28 @@ function TrailerPlayer({
   const [mode, setMode] = React.useState<"youtube" | "webview" | "failed">("youtube");
   const [nativeReady, setNativeReady] = React.useState(false);
   const [webviewLoaded, setWebviewLoaded] = React.useState(false);
+  const [attempt, setAttempt] = React.useState(0);
+  const [backgrounded, setBackgrounded] = React.useState(false);
 
   React.useEffect(() => {
     setMode("youtube");
     setNativeReady(false);
     setWebviewLoaded(false);
-  }, [videoKey]);
+  }, [videoKey, attempt]);
+
+  // Pause when the app leaves the foreground so audio never keeps playing
+  // behind the lock screen or another app.
+  React.useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      setBackgrounded(state !== "active");
+    });
+    return () => subscription.remove();
+  }, []);
+
+  // Closing the modal unmounts the player; make sure orientation is restored.
+  React.useEffect(() => () => setTrailerFullscreen(false), []);
+
+  const retry = React.useCallback(() => setAttempt((value) => value + 1), []);
 
   React.useEffect(() => {
     if (mode !== "youtube" || nativeReady) return;
@@ -195,10 +229,12 @@ function TrailerPlayer({
     return (
       <View style={styles.youtubeWrap}>
         <YoutubePlayer
+          key={`yt-${attempt}`}
           height={playerHeight}
           width="100%"
-          play
+          play={!backgrounded}
           videoId={videoKey}
+          onFullScreenChange={setTrailerFullscreen}
           forceAndroidAutoplay
           onReady={() => setNativeReady(true)}
           onError={() => setMode("webview")}
@@ -215,8 +251,12 @@ function TrailerPlayer({
   }
 
   if (mode === "webview") {
+    // The embed lives in a cross-origin iframe we cannot script, so pausing
+    // means unmounting; it resumes from the start when the app returns.
+    if (backgrounded) return <View style={styles.webview} />;
     return (
       <WebView
+        key={`wv-${attempt}`}
         source={{
           html: `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;padding:0;height:100%;background:#000}iframe{border:0;width:100%;height:100%}</style></head><body><iframe src="${embedUrl(videoKey, EMBED_ORIGIN).replace("https://www.youtube.com", EMBED_ORIGIN)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></body></html>`,
           baseUrl: EMBED_ORIGIN,
@@ -235,8 +275,12 @@ function TrailerPlayer({
           "https://*.youtube-nocookie.com",
           "about:*",
         ]}
-        onError={() => setMode("failed")}
-        onHttpError={() => setMode("failed")}
+        onError={(event) => {
+          if (isMainFrameEvent(event.nativeEvent?.url)) setMode("failed");
+        }}
+        onHttpError={(event) => {
+          if (isMainFrameEvent(event.nativeEvent?.url)) setMode("failed");
+        }}
         onLoadEnd={() => setWebviewLoaded(true)}
         onShouldStartLoadWithRequest={(request: { url: string }) => {
           const target = String(request.url || "").toLowerCase();
@@ -274,10 +318,20 @@ function TrailerPlayer({
         <Text style={styles.fallbackBody}>
           {t("Open the trailer externally if the embedded player is blocked.")}
         </Text>
-        <Pressable style={styles.fallbackButton} onPress={openExternal}>
-          <Ionicons name="open-outline" size={16} color={styles.fallbackButtonText.color} />
-          <Text style={styles.fallbackButtonText}>{t("Open on YouTube")}</Text>
-        </Pressable>
+        <View style={styles.fallbackActions}>
+          <Pressable
+            style={[styles.fallbackButton, styles.retryButton]}
+            onPress={retry}
+            accessibilityRole="button"
+          >
+            <Ionicons name="refresh" size={16} color={styles.retryButtonText.color} />
+            <Text style={styles.retryButtonText}>{t("Try again")}</Text>
+          </Pressable>
+          <Pressable style={styles.fallbackButton} onPress={openExternal}>
+            <Ionicons name="open-outline" size={16} color={styles.fallbackButtonText.color} />
+            <Text style={styles.fallbackButtonText}>{t("Open on YouTube")}</Text>
+          </Pressable>
+        </View>
       </View>
     );
   }
@@ -373,6 +427,22 @@ const useStyles = makeStyles((c, t) => ({
   fallbackBody: {
     color: c.textSecondary,
     textAlign: "center",
+  },
+  fallbackActions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: SPACING.sm,
+  },
+  retryButton: {
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: c.border,
+  },
+  retryButtonText: {
+    color: c.textPrimary,
+    fontFamily: FONTS.semibold,
+    fontSize: 13,
   },
   fallbackButton: {
     flexDirection: "row",

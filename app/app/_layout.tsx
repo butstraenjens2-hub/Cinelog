@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { StyleSheet } from "react-native";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import {
   Inter_400Regular,
   Inter_500Medium,
@@ -19,7 +19,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useNotificationSync } from "@/hooks/useNotificationSync";
 import { warmupApi } from "@/lib/http";
-import { queryClient } from "@/lib/query-client";
+import { persistOptions, queryClient } from "@/lib/query-client";
 import { startAuthSync } from "@/store/auth-store";
 import { ThemeProvider, useTheme } from "@/theme";
 
@@ -112,9 +112,9 @@ export default function RootLayout() {
   return (
     <ThemeProvider>
       <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
+        <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
           <ThemedShell />
-        </QueryClientProvider>
+        </PersistQueryClientProvider>
       </ErrorBoundary>
     </ThemeProvider>
   );

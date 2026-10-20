@@ -224,7 +224,8 @@ export const FONTS = {
   medium: "Inter_500Medium",
   semibold: "Inter_600SemiBold",
   bold: "Inter_700Bold",
-  extrabold: "Inter_800ExtraBold",
+  // 800 is no longer bundled: headings render in Bold to save a font load at startup.
+  extrabold: "Inter_700Bold",
 } as const;
 
 export interface BoxShadow {

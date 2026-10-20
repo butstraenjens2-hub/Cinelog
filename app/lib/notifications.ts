@@ -6,6 +6,8 @@
  *
  *  - New releases: a one-off reminder on the release date of each watchlist
  *    title that hasn't come out yet.
+ *  - New episodes: a reminder on the air date of the next announced episode of
+ *    each followed series (TMDB `next_episode_to_air`).
  *  - Recommendations: a weekly nudge towards the personalised rail.
  *  - Watchlist reminders: a weekly nudge about titles saved but not watched.
  *
@@ -18,11 +20,27 @@ import { Platform } from "react-native";
 
 import type { NotificationPrefs } from "@/store/settings-store";
 import type { WatchlistItem } from "@/lib/cinelog/types";
+import { episodeCode, type UpcomingEpisode } from "@/lib/cinelog/upNext";
 import { translate } from "@/i18n";
 
 /** Scheduling a reminder for every saved title would flood the queue. */
 const MAX_RELEASE_REMINDERS = 20;
 const WEEK_IN_SECONDS = 7 * 24 * 60 * 60;
+const MAX_EPISODE_REMINDERS = 20;
+/** Episode reminders fire at this local hour on the air date. */
+const EPISODE_REMINDER_HOUR = 18;
+
+function episodeReminderDate(airDate: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(airDate);
+  if (!match) return null;
+  const date = new Date(
+    Number(match[1]),
+    Number(match[2]) - 1,
+    Number(match[3]),
+    EPISODE_REMINDER_HOUR,
+  );
+  return date.getTime() > Date.now() ? date : null;
+}
 
 type NotificationsModule = typeof import("expo-notifications");
 
@@ -74,12 +92,17 @@ function releaseReminders(watchlist: WatchlistItem[]) {
 export async function syncNotifications(
   prefs: NotificationPrefs,
   watchlist: WatchlistItem[],
+  upcomingEpisodes: UpcomingEpisode[] = [],
 ): Promise<void> {
   const notifications = await loadModule();
   if (!notifications) return;
 
+  const wantsEpisodes = prefs.newEpisodes !== false;
   const wantsAny =
-    prefs.newReleases || prefs.recommendations || prefs.watchlistReminders;
+    prefs.newReleases ||
+    wantsEpisodes ||
+    prefs.recommendations ||
+    prefs.watchlistReminders;
 
   try {
     await notifications.cancelAllScheduledNotificationsAsync();
@@ -99,6 +122,32 @@ export async function syncNotifications(
           trigger: {
             type: SchedulableTriggerInputTypes.DATE,
             date: new Date(releaseAt),
+          },
+        });
+      }
+    }
+
+    if (wantsEpisodes) {
+      for (const episode of upcomingEpisodes.slice(0, MAX_EPISODE_REMINDERS)) {
+        const at = episodeReminderDate(episode.airDate);
+        if (!at) continue;
+        await notifications.scheduleNotificationAsync({
+          content: {
+            title: translate("New episode of {{title}}", {
+              title: episode.series.title,
+            }),
+            body: translate("{{code}} is out today.", {
+              code: episodeCode(episode.seasonNumber, episode.episodeNumber),
+            }),
+            data: {
+              type: "episode",
+              id: episode.series.id,
+              url: `/series/${episode.series.tmdbId}?season=${episode.seasonNumber}`,
+            },
+          },
+          trigger: {
+            type: SchedulableTriggerInputTypes.DATE,
+            date: at,
           },
         });
       }

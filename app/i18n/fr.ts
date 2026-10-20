@@ -379,4 +379,8 @@ export const FR: Record<string, string> = {
   "Up Next": "À suivre",
   "The next episode of the shows you follow": "Le prochain épisode des séries que vous suivez",
   "Mark {{code}} of {{title}} as watched": "Marquer {{code}} de {{title}} comme vu",
+  "New episodes": "Nouveaux épisodes",
+  "Remind me when a show I follow airs a new episode": "Me prévenir quand une série que je suis diffuse un nouvel épisode",
+  "New episode of {{title}}": "Nouvel épisode de {{title}}",
+  "{{code}} is out today.": "{{code}} sort aujourd'hui.",
 };

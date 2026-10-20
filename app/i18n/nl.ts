@@ -377,4 +377,8 @@ export const NL: Record<string, string> = {
   "Up Next": "Volgende aflevering",
   "The next episode of the shows you follow": "De volgende aflevering van de series die je volgt",
   "Mark {{code}} of {{title}} as watched": "{{code}} van {{title}} markeren als gezien",
+  "New episodes": "Nieuwe afleveringen",
+  "Remind me when a show I follow airs a new episode": "Herinner me wanneer een serie die ik volg een nieuwe aflevering uitzendt",
+  "New episode of {{title}}": "Nieuwe aflevering van {{title}}",
+  "{{code}} is out today.": "{{code}} verschijnt vandaag.",
 };

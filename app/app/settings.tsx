@@ -151,6 +151,12 @@ export default function SettingsScreen() {
               onChange={(value) => setNotification("newReleases", value)}
             />
             <ToggleRow
+              label={t("New episodes")}
+              hint={t("Remind me when a show I follow airs a new episode")}
+              value={notifications.newEpisodes !== false}
+              onChange={(value) => setNotification("newEpisodes", value)}
+            />
+            <ToggleRow
               label={t("Recommendations")}
               hint={t("Weekly picks based on what I watch")}
               value={notifications.recommendations}

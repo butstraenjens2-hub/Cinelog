@@ -31,6 +31,8 @@ export const LANGUAGES: { code: LanguageCode; label: string }[] = [
 
 export interface NotificationPrefs {
   newReleases: boolean;
+  /** New episodes of followed series (defaults on; absent in older saves). */
+  newEpisodes?: boolean;
   recommendations: boolean;
   watchlistReminders: boolean;
 }
@@ -69,6 +71,7 @@ export const useSettings = create<SettingsState>()(
       language: "en",
       notifications: {
         newReleases: true,
+        newEpisodes: true,
         recommendations: true,
         watchlistReminders: false,
       },

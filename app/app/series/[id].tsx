@@ -30,6 +30,8 @@ import { openPerson, openTitle, parseIdParam } from "@/lib/cinelog/navigation";
 import { useSeason, useSeriesDetail } from "@/lib/cinelog/queries";
 import { formatRuntime } from "@/lib/format";
 import type { MediaSummary } from "@/lib/cinelog/types";
+import { useShallow } from "zustand/react/shallow";
+
 import { toLibraryRef, useLibrary } from "@/store/library-store";
 
 export default function SeriesDetailScreen() {
@@ -113,8 +115,8 @@ export default function SeriesDetailScreen() {
   );
   const rate = useLibrary((state) => state.rate);
   const clearRating = useLibrary((state) => state.clearRating);
-  const episodeMap = useLibrary((state) =>
-    ref ? state.episodes[ref.id] : undefined,
+  const episodeMap = useLibrary(
+    useShallow((state) => (ref ? state.episodes[ref.id] : undefined)),
   );
   const toggleEpisodeWatched = useLibrary(
     (state) => state.toggleEpisodeWatched,

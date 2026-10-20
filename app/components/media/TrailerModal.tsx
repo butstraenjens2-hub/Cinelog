@@ -29,7 +29,9 @@ import { Pressable } from "@/components/ui/Pressable";
 import YoutubePlayer from "react-native-youtube-iframe";
 import { WebView } from "react-native-webview";
 
-function embedUrl(videoKey: string): string {
+const EMBED_ORIGIN = "https://www.youtube-nocookie.com";
+
+function embedUrl(videoKey: string, origin?: string): string {
   const params = new URLSearchParams({
     autoplay: "1",
     playsinline: "1",
@@ -37,7 +39,8 @@ function embedUrl(videoKey: string): string {
     rel: "0",
     fs: "1",
   });
-  return `https://www.youtube.com/embed/${videoKey}?${params}`;
+  if (origin) params.set("origin", origin);
+  return `https://www.youtube.com/embed/${encodeURIComponent(videoKey)}?${params}`;
 }
 
 export interface TrailerModalProps {
@@ -214,7 +217,10 @@ function TrailerPlayer({
   if (mode === "webview") {
     return (
       <WebView
-        source={{ uri: embedUrl(videoKey) }}
+        source={{
+          html: `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;padding:0;height:100%;background:#000}iframe{border:0;width:100%;height:100%}</style></head><body><iframe src="${embedUrl(videoKey, EMBED_ORIGIN).replace("https://www.youtube.com", EMBED_ORIGIN)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></body></html>`,
+          baseUrl: EMBED_ORIGIN,
+        }}
         style={styles.webview}
         allowsFullscreenVideo
         allowsInlineMediaPlayback
@@ -222,21 +228,13 @@ function TrailerPlayer({
         javaScriptEnabled
         domStorageEnabled
         thirdPartyCookiesEnabled
-        originWhitelist={["*"]}
-        injectedJavaScript={`(function(){
-          try {
-            var unmute = function(){
-              var media = document.querySelector('video');
-              if (!media) return;
-              media.muted = false;
-              media.volume = 1;
-              media.play && media.play().catch(function(){});
-            };
-            document.addEventListener('click', unmute, true);
-            document.addEventListener('touchstart', unmute, true);
-            setTimeout(unmute, 800);
-          } catch (e) {}
-        })(); true;`}
+        originWhitelist={[
+          "https://www.youtube.com",
+          "https://*.youtube.com",
+          "https://www.youtube-nocookie.com",
+          "https://*.youtube-nocookie.com",
+          "about:*",
+        ]}
         onError={() => setMode("failed")}
         onHttpError={() => setMode("failed")}
         onLoadEnd={() => setWebviewLoaded(true)}

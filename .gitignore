@@ -113,3 +113,6 @@ hs_err_pid*.log
 # Root tsconfig is local-only (each workspace has its own)
 tsconfig.json
 check-assets.py
+
+# Release APKs are build artifacts
+releases/*.apk

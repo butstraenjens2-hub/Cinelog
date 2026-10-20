@@ -11,6 +11,7 @@ import { Carousel } from "@/components/media/Carousel";
 import { PosterCard } from "@/components/media/PosterCard";
 import { FloatingBackButton } from "@/components/navigation/MobileHeader";
 import { ProfileStats } from "@/components/profile/ProfileStats";
+import { YearInReviewCard } from "@/components/profile/YearInReview";
 import { Button } from "@/components/ui/Button";
 import { Screen } from "@/components/ui/Screen";
 import { EmptyState } from "@/components/ui/States";
@@ -134,6 +135,10 @@ export default function ProfileScreen() {
 
         <View style={[styles.statsBlock, { paddingHorizontal: gutter }]}>
           <ProfileStats stats={stats} />
+        </View>
+
+        <View style={styles.statsBlock}>
+          <YearInReviewCard gutter={gutter} />
         </View>
 
         <View style={styles.sections}>

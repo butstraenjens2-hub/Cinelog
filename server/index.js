@@ -497,6 +497,7 @@ function getNowPartsInTimezone(timeZone) {
 }
 
 function clearMediaCaches() {
+  __tmdbLru.clear();
   const before = __cache.size;
   const mediaKeyPattern =
     /^(movies_|series_|movie_|tv_|vod-|vod_|trailer_|tmdb|search_|media_)/i;
@@ -1171,10 +1172,52 @@ async function tmdb(pathAndQuery, options = {}) {
 
   const cacheKey = `tmdb:${url}`;
   if (cacheTtlMs > 0) {
-    const cached = cacheGet(cacheKey);
+    const cached = tmdbLruGet(cacheKey);
     if (cached) return cached;
   }
+  // Coalesce concurrent identical TMDB requests into one upstream call.
+  const pending = __tmdbInflight.get(cacheKey);
+  if (pending) return pending;
+  const request = tmdbFetchUncached(url, timeoutMs).then((data) => {
+    if (cacheTtlMs > 0) tmdbLruSet(cacheKey, data, cacheTtlMs);
+    return data;
+  });
+  __tmdbInflight.set(cacheKey, request);
+  try {
+    return await request;
+  } finally {
+    __tmdbInflight.delete(cacheKey);
+  }
+}
 
+// Dedicated, size-capped LRU for TMDB responses so varied traffic (search,
+// person, season pages) cannot grow memory without bound.
+const TMDB_LRU_MAX = Math.max(100, Number(process.env.TMDB_LRU_MAX || 1500));
+const __tmdbLru = new Map(); // key -> { value, expiresAt }
+const __tmdbInflight = new Map();
+
+function tmdbLruGet(key) {
+  const entry = __tmdbLru.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    __tmdbLru.delete(key);
+    return null;
+  }
+  // Refresh recency.
+  __tmdbLru.delete(key);
+  __tmdbLru.set(key, entry);
+  return entry.value;
+}
+
+function tmdbLruSet(key, value, ttlMs) {
+  __tmdbLru.delete(key);
+  __tmdbLru.set(key, { value, expiresAt: Date.now() + ttlMs });
+  while (__tmdbLru.size > TMDB_LRU_MAX) {
+    __tmdbLru.delete(__tmdbLru.keys().next().value);
+  }
+}
+
+async function tmdbFetchUncached(url, timeoutMs) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -1189,7 +1232,6 @@ async function tmdb(pathAndQuery, options = {}) {
       e.details = data;
       throw e;
     }
-    if (cacheTtlMs > 0) cacheSet(cacheKey, data, cacheTtlMs);
     return data;
   } finally {
     clearTimeout(timer);

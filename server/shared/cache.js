@@ -86,10 +86,15 @@ const MAX_ENTRIES = Number(process.env.CACHE_MAX_ENTRIES || 2000);
 
 function evictIfNeeded() {
   if (store.size < MAX_ENTRIES) return;
-  // Evict oldest 10%
-  const entries = [...store.entries()].sort((a, b) => a[1].staleAt - b[1].staleAt);
+  // Map iteration order is insertion order and hits re-insert, so the first
+  // keys are the least recently used. Evict the oldest 10% without sorting.
   const toEvict = Math.ceil(MAX_ENTRIES * 0.1);
-  for (let i = 0; i < toEvict; i++) store.delete(entries[i][0]);
+  const keys = store.keys();
+  for (let i = 0; i < toEvict; i++) {
+    const next = keys.next();
+    if (next.done) break;
+    store.delete(next.value);
+  }
 }
 
 // ─── Core Primitives ──────────────────────────────────────────────────────────
@@ -110,6 +115,10 @@ async function get(key) {
   const item = store.get(key);
   if (!item) return null;
   if (Date.now() <= item.expiresAt) {
+    // LRU: a hit moves the entry to the most-recent end and refreshes its age.
+    store.delete(key);
+    item.staleAt = Date.now();
+    store.set(key, item);
     log.debug('cache hit (memory)', { key });
     return item.value;
   }

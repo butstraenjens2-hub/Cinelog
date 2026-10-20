@@ -673,7 +673,39 @@ function formatSeconds(totalSeconds: number): string {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
-function StreamWebView({
+function StreamWebView(props: StreamWebViewProps) {
+  // On web builds prefer a plain iframe instead of the native WebView wrapper.
+  // Split into two components so each one calls its hooks unconditionally.
+  if (Platform.OS === "web") return <StreamWebViewWeb {...props} />;
+  return <StreamWebViewNative {...props} />;
+}
+
+function StreamWebViewWeb({ url, onFail, onLoad }: StreamWebViewProps) {
+  return React.createElement("iframe", {
+    src: url,
+    title: `CineLog player`,
+    allow: "autoplay; encrypted-media; picture-in-picture; fullscreen",
+    allowFullScreen: true,
+    // Deliberately omits allow-popups/allow-top-navigation so third-party
+    // embed ads can't open popup tabs or hijack the top-level window.
+    sandbox:
+      "allow-scripts allow-same-origin allow-forms allow-presentation allow-orientation-lock",
+    referrerPolicy: "no-referrer",
+    style: { width: "100%", height: "100%", border: 0, background: "#000" },
+    onLoad: () => {
+      try {
+        onLoad();
+      } catch {}
+    },
+    onError: () => {
+      try {
+        onFail();
+      } catch {}
+    },
+  });
+}
+
+function StreamWebViewNative({
   url,
   onFail,
   onLoad,
@@ -687,31 +719,6 @@ function StreamWebView({
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const webViewRef = useRef<WebView>(null);
-  // On web builds prefer a plain iframe instead of the native WebView wrapper.
-  if (Platform.OS === "web") {
-    return React.createElement("iframe", {
-      src: url,
-      title: `CineLog player`,
-      allow: "autoplay; encrypted-media; picture-in-picture; fullscreen",
-      allowFullScreen: true,
-      // Deliberately omits allow-popups/allow-top-navigation so third-party
-      // embed ads can't open popup tabs or hijack the top-level window.
-      sandbox:
-        "allow-scripts allow-same-origin allow-forms allow-presentation allow-orientation-lock",
-      referrerPolicy: "no-referrer",
-      style: { width: "100%", height: "100%", border: 0, background: "#000" },
-      onLoad: () => {
-        try {
-          onLoad();
-        } catch {}
-      },
-      onError: () => {
-        try {
-          onFail();
-        } catch {}
-      },
-    });
-  }
   const topHostLockRef = useRef("");
   const autoHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const volumeBoostIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -1440,6 +1447,9 @@ function StreamWebView({
         } catch (error) {}
       })();
     `;
+    // Intentionally computed once: the injected script only needs the initial
+    // resume position; re-injecting on startAtSeconds changes would reload it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

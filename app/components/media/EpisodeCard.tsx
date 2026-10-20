@@ -8,6 +8,7 @@
 import React from "react";
 import { Text, View } from "react-native";
 import { Image } from "expo-image";
+import { sizedTmdbImage } from "@/lib/cinelog/images";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useLocale, useT } from "@/i18n";
@@ -86,7 +87,7 @@ export function EpisodeCard({
       >
         {episode.still ? (
           <Image
-            source={{ uri: episode.still }}
+            source={{ uri: sizedTmdbImage(episode.still, typeof stillWidth === "number" ? stillWidth : 320, "still") }}
             style={styles.still}
             contentFit="cover"
             transition={200}

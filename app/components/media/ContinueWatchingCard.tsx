@@ -8,6 +8,7 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
+import { sizedTmdbImage } from "@/lib/cinelog/images";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -53,7 +54,7 @@ export function ContinueWatchingCard({
         <View style={[styles.card, { width, height }]}>
           {artwork ? (
             <Image
-              source={{ uri: artwork }}
+              source={{ uri: sizedTmdbImage(artwork, width, "still") }}
               style={StyleSheet.absoluteFill}
               contentFit="cover"
               transition={200}

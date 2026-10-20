@@ -20,6 +20,7 @@ import { ARTWORK, CARD_SCRIM, FONTS, RADIUS, SPACING } from "@/constants/theme";
 import { makeStyles, useTheme } from "@/theme";
 import { useResponsive } from "@/hooks/useResponsive";
 import { metaLine } from "@/lib/format";
+import { sizedTmdbImage, tmdbPlaceholder } from "@/lib/cinelog/images";
 import type { LibraryEntryRef, MediaSummary } from "@/lib/cinelog/types";
 import { useLibrary } from "@/store/library-store";
 
@@ -100,7 +101,9 @@ function PosterCardComponent({
         <View style={[styles.posterWrap, { width, height }]}>
           {posterUri ? (
             <Image
-              source={{ uri: posterUri }}
+              source={{ uri: sizedTmdbImage(posterUri, width) }}
+              placeholder={tmdbPlaceholder(posterUri)}
+              placeholderContentFit="cover"
               style={styles.poster}
               contentFit="cover"
               transition={220}

@@ -3,6 +3,7 @@
 import React from "react";
 import { Text, View } from "react-native";
 import { Image } from "expo-image";
+import { sizedTmdbImage } from "@/lib/cinelog/images";
 import { Ionicons } from "@expo/vector-icons";
 
 import { TouchableScale } from "@/components/ui/Pressable";
@@ -31,7 +32,7 @@ export function CastCard({ member, width, onPress }: CastCardProps) {
       <View style={[styles.photoWrap, { width, height: width }]}>
         {member.photo ? (
           <Image
-            source={{ uri: member.photo }}
+            source={{ uri: sizedTmdbImage(member.photo, width, "profile") }}
             style={styles.photo}
             contentFit="cover"
             transition={200}

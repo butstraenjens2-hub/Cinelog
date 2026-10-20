@@ -6,7 +6,7 @@
  * trending paginates, which drives the infinite scroll on the browse pages.
  */
 
-import { useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
 import { STALE } from "@/lib/query-client";
@@ -93,6 +93,23 @@ export interface Rail {
   refetch: () => void;
 }
 
+/** Keeps the rail object (and its refetch callback) referentially stable so
+ * memoised rails/cards skip re-rendering when nothing changed. */
+function useStableRail(
+  items: MediaSummary[],
+  isLoading: boolean,
+  isError: boolean,
+  refetchQuery: () => unknown,
+): Rail {
+  const refetchRef = useRef(refetchQuery);
+  refetchRef.current = refetchQuery;
+  const refetch = useCallback(() => void refetchRef.current(), []);
+  return useMemo(
+    () => ({ items, isLoading, isError, refetch }),
+    [items, isLoading, isError, refetch],
+  );
+}
+
 // ── Rails ────────────────────────────────────────────────────────────────────
 
 export function useMovieRail(
@@ -109,12 +126,7 @@ export function useMovieRail(
     },
   );
   const items = useMemo(() => query.data?.pages[0]?.results ?? [], [query.data]);
-  return {
-    items,
-    isLoading: query.isLoading,
-    isError: query.isError,
-    refetch: () => void query.refetch(),
-  };
+  return useStableRail(items, query.isLoading, query.isError, query.refetch);
 }
 
 export function useSeriesRail(
@@ -131,12 +143,7 @@ export function useSeriesRail(
     },
   );
   const items = useMemo(() => query.data?.pages[0]?.results ?? [], [query.data]);
-  return {
-    items,
-    isLoading: query.isLoading,
-    isError: query.isError,
-    refetch: () => void query.refetch(),
-  };
+  return useStableRail(items, query.isLoading, query.isError, query.refetch);
 }
 
 /** Mixed movie + series feed used by the home hero and the Trending rail. */
@@ -147,12 +154,7 @@ export function useTrending(): Rail {
     staleTime: STALE.short,
   });
   const items = useMemo(() => query.data ?? [], [query.data]);
-  return {
-    items,
-    isLoading: query.isLoading,
-    isError: query.isError,
-    refetch: () => void query.refetch(),
-  };
+  return useStableRail(items, query.isLoading, query.isError, query.refetch);
 }
 
 // ── Browse ───────────────────────────────────────────────────────────────────
@@ -183,9 +185,11 @@ function dedupe(
   return out;
 }
 
-function toBrowse(query: ReturnType<typeof useMediaList>): Browse {
+function useBrowse(query: ReturnType<typeof useMediaList>): Browse {
+  // Deduping every page on each render is O(n); memoise on the page data.
+  const items = useMemo(() => dedupe(query.data?.pages), [query.data]);
   return {
-    items: dedupe(query.data?.pages),
+    items,
     isLoading: query.isLoading,
     isError: query.isError,
     isLoadingMore: query.isFetchingNextPage,
@@ -203,7 +207,7 @@ export function useMovieBrowse(
   list: MovieListKey,
   genreId: number | null,
 ): Browse {
-  return toBrowse(
+  return useBrowse(
     useMediaList(
       genreId !== null
         ? mediaKeys.moviesByGenre(genreId)
@@ -224,7 +228,7 @@ export function useSeriesBrowse(
   list: SeriesListKey,
   genreId: number | null,
 ): Browse {
-  return toBrowse(
+  return useBrowse(
     useMediaList(
       genreId !== null
         ? mediaKeys.seriesByGenre(genreId)

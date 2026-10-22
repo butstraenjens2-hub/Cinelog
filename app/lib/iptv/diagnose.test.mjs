@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { diagnoseM3u, diagnoseXtream } from "./diagnose.mjs";
-import { fetchPlaylist, playlistHeaders, resolveUserAgent } from "./http.mjs";
+import { androidWireHeaders, fetchPlaylist, playlistHeaders, resolveUserAgent } from "./http.mjs";
 
 function jsonResponse(status, body) {
   return {
@@ -14,12 +14,26 @@ function jsonResponse(status, body) {
   };
 }
 
-test("playlist headers send a player name and Accept, and omit Referer and Origin", () => {
+test("playlist headers match VLC and OkHttp does not add gzip when Range is set", () => {
   const headers = playlistHeaders("IPTVSmartersPlayer");
   assert.equal(headers["User-Agent"], "IPTVSmartersPlayer");
-  assert.match(headers.Accept, /application\/json/);
+  assert.equal(headers.Accept, "*/*");
+  assert.equal(headers.Range, "bytes=0-");
+  assert.equal(headers["Icy-MetaData"], "1");
   assert.equal(Object.hasOwn(headers, "Referer"), false);
   assert.equal(Object.hasOwn(headers, "Origin"), false);
+  assert.equal(Object.hasOwn(headers, "Accept-Encoding"), false);
+  assert.equal(Object.hasOwn(headers, "Accept-Language"), false);
+  assert.equal(Object.hasOwn(headers, "Cookie"), false);
+  const wire = androidWireHeaders(headers);
+  assert.equal(wire["Accept-Encoding"], undefined);
+  assert.equal(wire.Connection, "Keep-Alive");
+  const previous = androidWireHeaders({
+    "User-Agent": "VLC/3.0.21 LibVLC/3.0.21",
+    Accept: "application/json, application/vnd.apple.mpegurl, */*",
+  });
+  assert.equal(previous["Accept-Encoding"], "gzip");
+  assert.equal(previous["User-Agent"], "VLC/3.0.21 LibVLC/3.0.21");
   assert.equal(resolveUserAgent("smarters", "ignored"), "IPTVSmartersPlayer");
   assert.equal(resolveUserAgent("tivimate", ""), "TiviMate/4.7.0");
   assert.equal(resolveUserAgent("okhttp", ""), "okhttp/4.9.2");
@@ -50,9 +64,12 @@ test("a later live-categories 403 is named and the password stays out of the rep
   });
   const text = lines.join("\n");
   assert.match(text, /User agent: IPTVSmartersPlayer/);
-  assert.match(text, /Referer and Origin are not sent/);
+  assert.match(text, /Referer: not sent/);
+  assert.match(text, /Accept-Encoding: not sent/);
+  assert.match(text, /Range: bytes=0-/);
   assert.match(text, /Sign in: OK/);
   assert.match(text, /Live categories: HTTP 403: 403 Forbidden/);
+  assert.match(text, /Response: HTTP 403/);
   assert.equal(text.includes("secret-token"), false);
   assert.equal(text.includes("example.com"), false);
 });

@@ -1,7 +1,9 @@
 /**
  * Playlist HTTP. CineLog does not ship a playlist.
- * Requests are GET and follow redirects. The player name is configurable
- * because many panels reject a browser user agent with HTTP 403.
+ * Requests are GET and follow redirects. The header set matches VLC:
+ * a player User-Agent, Accept star-slash-star, Range bytes=0-, and
+ * Icy-MetaData 1. OkHttp 4.9.2 adds Accept-Encoding gzip unless Range
+ * or Accept-Encoding is already set, and panels answer that with 403.
  */
 
 export const DEFAULT_IPTV_USER_AGENT = "VLC/3.0.21 LibVLC/3.0.21";
@@ -26,12 +28,66 @@ export function resolveUserAgent(preset, custom) {
   return match.userAgent;
 }
 
-/** Only these headers are sent. Referer and Origin are omitted on purpose. */
+/**
+ * Headers a playlist request asks for. Referer, Origin, Accept-Language,
+ * Cookie, and Accept-Encoding are omitted on purpose.
+ */
 export function playlistHeaders(userAgent) {
   return {
     "User-Agent": effectiveUserAgent(userAgent),
-    Accept: "application/json, application/vnd.apple.mpegurl, */*",
+    Accept: "*/*",
+    Range: "bytes=0-",
+    "Icy-MetaData": "1",
   };
+}
+
+function hasHeader(headers, name) {
+  const needle = name.toLowerCase();
+  return Object.keys(headers).some((key) => key.toLowerCase() === needle);
+}
+
+/**
+ * What Android's OkHttp 4.9.2 BridgeInterceptor adds before the bytes leave
+ * the phone. Range suppresses Accept-Encoding gzip. The cookie jar used by
+ * React Native fetch is empty unless credentials are included, which playlist
+ * requests do not do. Accept-Language is not added.
+ */
+export function androidWireHeaders(headers) {
+  const wire = { ...headers };
+  if (!hasHeader(wire, "Connection")) wire.Connection = "Keep-Alive";
+  if (!hasHeader(wire, "Accept-Encoding") && !hasHeader(wire, "Range")) {
+    wire["Accept-Encoding"] = "gzip";
+  }
+  if (!hasHeader(wire, "User-Agent")) wire["User-Agent"] = "okhttp/4.9.2";
+  return wire;
+}
+
+export function safeHeaderValue(name, value) {
+  const label = String(name || "").toLowerCase();
+  const text = String(value ?? "");
+  if (label === "location" || label === "set-cookie" || label === "cookie") return "(hidden)";
+  if (/password=|username=|:\/\//i.test(text)) return "(hidden)";
+  return text.replace(/\s+/g, " ").trim().slice(0, 180);
+}
+
+export function formatExchangeReport(exchange) {
+  const lines = ["Request headers:"];
+  for (const [name, value] of Object.entries(exchange?.requestHeaders || {})) {
+    lines.push(`${name}: ${safeHeaderValue(name, value)}`);
+  }
+  lines.push("Accept-Encoding: not sent");
+  lines.push("Accept-Language: not sent");
+  lines.push("Cookie: not sent");
+  lines.push("Referer: not sent");
+  lines.push("Origin: not sent");
+  if (exchange?.scheme) lines.push(exchange.scheme);
+  lines.push(`Response: HTTP ${exchange?.status ?? ""}`.trim());
+  const response = Object.entries(exchange?.responseHeaders || {});
+  if (response.length) {
+    lines.push("Response headers:");
+    for (const [name, value] of response) lines.push(`${name}: ${safeHeaderValue(name, value)}`);
+  }
+  return lines;
 }
 
 export function plainServerMessage(body) {
@@ -70,30 +126,70 @@ function clip(value) {
   return String(value).replace(/\s+/g, " ").trim().slice(0, 180);
 }
 
+function readHeaders(response) {
+  const headers = response?.headers;
+  if (!headers) return {};
+  if (typeof headers.forEach === "function") {
+    const out = {};
+    headers.forEach((value, name) => {
+      out[String(name)] = String(value);
+    });
+    return out;
+  }
+  return { ...headers };
+}
+
+function schemeNote(requestUrl, responseUrl) {
+  if (!responseUrl) return "";
+  try {
+    const from = new URL(String(requestUrl)).protocol.replace(":", "");
+    const to = new URL(String(responseUrl)).protocol.replace(":", "");
+    if (!from || !to) return "";
+    return from === to ? `Scheme stayed ${from}.` : `Scheme changed from ${from} to ${to}.`;
+  } catch {
+    return "";
+  }
+}
+
 /**
- * GET a playlist or player_api.php response.
- * `fetchImpl` is for tests. The thrown message is the status and the server
- * text, never the request URL (Xtream puts the password in the query).
+ * GET a playlist or player_api.php response and keep the headers for the
+ * connection report. `fetchImpl` is for tests. Nothing in the result includes
+ * the request URL, because an Xtream URL contains the password.
  */
-export async function fetchPlaylist(url, options = {}) {
-  const userAgent = effectiveUserAgent(options.userAgent);
+export async function exchangePlaylist(url, options = {}) {
+  const headers = playlistHeaders(options.userAgent);
   const doFetch = options.fetchImpl || fetch;
   const response = await doFetch(url, {
     method: "GET",
     redirect: "follow",
-    headers: playlistHeaders(userAgent),
+    headers,
   });
+  let body = "";
+  try {
+    body = await response.text();
+  } catch {
+    body = "";
+  }
+  const exchange = {
+    ok: Boolean(response.ok),
+    status: response.status,
+    body,
+    requestHeaders: androidWireHeaders(headers),
+    responseHeaders: readHeaders(response),
+    scheme: schemeNote(url, response.url),
+  };
   if (!response.ok) {
-    let body = "";
-    try {
-      body = await response.text();
-    } catch {
-      body = "";
-    }
     const error = new Error(formatStepError(options.step, response.status, body));
     error.status = response.status;
     error.step = options.step || "";
+    error.exchange = exchange;
     throw error;
   }
-  return response.text();
+  return exchange;
+}
+
+/** GET a playlist body. The thrown message never includes the request URL. */
+export async function fetchPlaylist(url, options = {}) {
+  const exchange = await exchangePlaylist(url, options);
+  return exchange.body;
 }

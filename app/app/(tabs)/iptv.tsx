@@ -505,7 +505,11 @@ export default function IptvScreen() {
                   </View>
                 ) : null}
                 <Button label={t("Test connection")} size="sm" variant="secondary" onPress={() => void testConnection()} />
-                {diag ? <Text style={styles.diag}>{diag}</Text> : null}
+                {diag ? (
+                  <Text style={styles.diag} selectable>
+                    {diag}
+                  </Text>
+                ) : null}
                 {source ? (
                   <Button
                     label={t("Remove playlist")}

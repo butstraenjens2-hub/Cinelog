@@ -3,7 +3,7 @@
  * The report names the step and never includes the request URL.
  */
 
-import { fetchPlaylist, resolveUserAgent } from "./http.mjs";
+import { exchangePlaylist, formatExchangeReport, resolveUserAgent } from "./http.mjs";
 import { xtreamApiUrl } from "./xtream.mjs";
 
 function schemeOf(server) {
@@ -22,8 +22,14 @@ export function swapScheme(server) {
 }
 
 async function probe(step, url, userAgent, fetchImpl) {
-  const text = await fetchPlaylist(url, { userAgent, fetchImpl, step });
-  return text;
+  const exchange = await exchangePlaylist(url, { userAgent, fetchImpl, step });
+  return exchange;
+}
+
+function failureLines(error) {
+  const message = error instanceof Error ? error.message : "The request failed.";
+  const report = error && error.exchange ? formatExchangeReport(error.exchange) : [];
+  return [message, ...report];
 }
 
 /**
@@ -33,36 +39,37 @@ async function probe(step, url, userAgent, fetchImpl) {
  */
 export async function diagnoseXtream({ server, username, password, userAgent, fetchImpl }) {
   const agent = resolveUserAgent(undefined, userAgent);
-  const lines = [`User agent: ${agent}`, "Referer and Origin are not sent."];
+  const lines = [`User agent: ${agent}`];
   const signIn = xtreamApiUrl(server, username, password, "");
   try {
-    await probe("Sign in", signIn, agent, fetchImpl);
-    lines.push("Sign in: OK");
+    const exchange = await probe("Sign in", signIn, agent, fetchImpl);
+    lines.push("Sign in: OK", ...formatExchangeReport(exchange));
   } catch (error) {
-    lines.push(error instanceof Error ? error.message : "Sign in failed.");
+    lines.push(...failureLines(error));
     const alt = swapScheme(server);
     if (alt) {
       const label = schemeOf(alt).replace(":", "");
       try {
-        await probe("Sign in", xtreamApiUrl(alt, username, password, ""), agent, fetchImpl);
-        lines.push(`Sign in over ${label}: OK. Save the server with that address.`);
+        const exchange = await probe("Sign in", xtreamApiUrl(alt, username, password, ""), agent, fetchImpl);
+        lines.push(`Sign in over ${label}: OK. Save the server with that address.`, ...formatExchangeReport(exchange));
       } catch (altError) {
         const message = altError instanceof Error ? altError.message : "failed";
         lines.push(message.replace(/^Sign in/, `Sign in over ${label}`));
+        if (altError && altError.exchange) lines.push(...formatExchangeReport(altError.exchange));
       }
     }
     return lines;
   }
   try {
-    await probe(
+    const exchange = await probe(
       "Live categories",
       xtreamApiUrl(server, username, password, "get_live_categories"),
       agent,
       fetchImpl,
     );
-    lines.push("Live categories: OK");
+    lines.push("Live categories: OK", ...formatExchangeReport(exchange));
   } catch (error) {
-    lines.push(error instanceof Error ? error.message : "Live categories failed.");
+    lines.push(...failureLines(error));
   }
   return lines;
 }
@@ -72,21 +79,24 @@ export async function diagnoseXtream({ server, username, password, userAgent, fe
  */
 export async function diagnoseM3u({ url, userAgent, fetchImpl }) {
   const agent = resolveUserAgent(undefined, userAgent);
-  const lines = [`User agent: ${agent}`, "Referer and Origin are not sent."];
+  const lines = [`User agent: ${agent}`];
   try {
-    const text = await probe("Playlist", url, agent, fetchImpl);
-    lines.push(text.includes("#EXTM3U") ? "Playlist: OK" : "Playlist: OK, but the file is not an M3U playlist.");
+    const exchange = await probe("Playlist", url, agent, fetchImpl);
+    lines.push(exchange.body.includes("#EXTM3U") ? "Playlist: OK" : "Playlist: OK, but the file is not an M3U playlist.");
+    lines.push(...formatExchangeReport(exchange));
   } catch (error) {
-    lines.push(error instanceof Error ? error.message : "Playlist failed.");
+    lines.push(...failureLines(error));
     const alt = swapScheme(url);
     if (alt) {
       const label = schemeOf(alt).replace(":", "");
       try {
-        await probe("Playlist", alt, agent, fetchImpl);
+        const exchange = await probe("Playlist", alt, agent, fetchImpl);
         lines.push(`Playlist over ${label}: OK. Save the playlist with that address.`);
+        lines.push(...formatExchangeReport(exchange));
       } catch (altError) {
         const message = altError instanceof Error ? altError.message : "failed";
         lines.push(message.replace(/^Playlist/, `Playlist over ${label}`));
+        if (altError && altError.exchange) lines.push(...formatExchangeReport(altError.exchange));
       }
     }
   }

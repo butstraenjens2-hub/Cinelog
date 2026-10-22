@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import http from "node:http";
 import test from "node:test";
 
 import { xtreamApiUrl } from "./xtream.mjs";
@@ -76,6 +77,52 @@ test("a browser user agent is refused and the 403 body is shown for M3U and Xtre
   assert.equal(calls.at(-1).userAgent, DEFAULT_IPTV_USER_AGENT);
   assert.equal(calls.at(-1).method, "GET");
   assert.equal(DEFAULT_IPTV_USER_AGENT.includes("Mozilla"), false);
+});
+
+test("a local echo server receives the player name, VLC headers, and an unchanged query", async () => {
+  const seen = [];
+  const server = http.createServer((request, response) => {
+    seen.push({ url: request.url, headers: request.headers });
+    if (String(request.url).startsWith("/hop")) {
+      response.writeHead(302, {
+        Location: "/get.php?username=ada&password=secret-token&type=m3u_plus&output=ts",
+      });
+      response.end();
+      return;
+    }
+    response.writeHead(200, { "Content-Type": "audio/x-mpegurl", Server: "echo" });
+    response.end("#EXTM3U\n");
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const { port } = server.address();
+  try {
+    const body = await fetchPlaylist(
+      `http://127.0.0.1:${port}/get.php?username=ada&password=secret-token&type=m3u_plus&output=ts`,
+      { userAgent: DEFAULT_IPTV_USER_AGENT },
+    );
+    assert.match(body, /#EXTM3U/);
+    assert.equal(seen[0].headers["user-agent"], DEFAULT_IPTV_USER_AGENT);
+    assert.equal(seen[0].headers.accept, "*/*");
+    assert.equal(seen[0].headers.range, "bytes=0-");
+    assert.equal(seen[0].headers["icy-metadata"], "1");
+    assert.equal(seen[0].headers.cookie, undefined);
+    assert.equal(seen[0].headers["user-agent"].includes("okhttp"), false);
+    assert.equal(
+      seen[0].url,
+      "/get.php?username=ada&password=secret-token&type=m3u_plus&output=ts",
+    );
+
+    seen.length = 0;
+    await fetchPlaylist(`http://127.0.0.1:${port}/hop`, { userAgent: "IPTVSmartersPlayer" });
+    assert.equal(seen[0].headers["user-agent"], "IPTVSmartersPlayer");
+    assert.equal(seen[1].headers["user-agent"], "IPTVSmartersPlayer");
+    assert.equal(seen[1].headers.range, "bytes=0-");
+    assert.equal(seen[1].headers["icy-metadata"], "1");
+    assert.match(seen[1].url, /password=secret-token/);
+    assert.equal(seen[1].url.startsWith("https:"), false);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
 });
 
 test("formatHttpError keeps a JSON server message and the status", () => {

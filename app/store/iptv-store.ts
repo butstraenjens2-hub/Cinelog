@@ -102,7 +102,7 @@ export function normalizeSource(raw: Partial<IptvSource> | null | undefined): Ip
     username: String(row.username || ""),
     userAgentPreset: String(row.userAgentPreset || ""),
     userAgent: String(row.userAgent || "").slice(0, 240),
-    player: row.player === "expo" || row.player === "media3" ? row.player : "",
+    player: row.player === "expo" || row.player === "media3" || row.player === "vlc" ? row.player : "",
     streamFormat: row.streamFormat === "m3u8" ? "m3u8" : "ts",
     epgOffsetHours: Number(row.epgOffsetHours) || 0,
     lockedGroups: Array.isArray(row.lockedGroups) ? row.lockedGroups.map(String).slice(0, 80) : [],
@@ -124,7 +124,7 @@ export function sourceAgent(source: Pick<IptvSource, "userAgentPreset" | "userAg
 }
 
 export function sourcePlayer(source: Pick<IptvSource, "player">, fallback: string) {
-  if (source.player === "expo" || source.player === "media3") return source.player;
+  if (source.player === "expo" || source.player === "media3" || source.player === "vlc") return source.player;
   return fallback === "expo" ? "expo" : "media3";
 }
 

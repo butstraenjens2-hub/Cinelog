@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
+import { ActivityIndicator, NativeModules, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 
@@ -68,15 +68,66 @@ export function BackLink() {
   );
 }
 
+const KNOWN_WARNINGS = new Set(["Loaded with libVLC.", "Loaded with the Xtream API."]);
+
+function scrubDiagnostics(text: string) {
+  return text
+    .replace(/https?:\/\/\S+/gi, "[url]")
+    .replace(/password=[^\s&]*/gi, "password=(hidden)")
+    .replace(/username=[^\s&]*/gi, "username=(hidden)")
+    .slice(0, 6000);
+}
+
+async function writeDiagnostics(text: string) {
+  const clean = scrubDiagnostics(text);
+  const native = NativeModules.IptvHttp as { copyText?: (value: string) => Promise<boolean> } | undefined;
+  if (native?.copyText) {
+    await native.copyText(clean);
+    return true;
+  }
+  const clipboard = (globalThis as { navigator?: { clipboard?: { writeText?: (value: string) => Promise<void> } } }).navigator?.clipboard;
+  if (!clipboard?.writeText) return false;
+  await clipboard.writeText(clean);
+  return true;
+}
+
+function CopyDiagnostics({ text }: { text: string }) {
+  const t = useT();
+  const [copied, setCopied] = useState(false);
+  if (!text.trim()) return null;
+  return (
+    <Button
+      label={copied ? t("Copied") : t("Copy diagnostics")}
+      size="sm"
+      variant="secondary"
+      onPress={() => {
+        void writeDiagnostics(text)
+          .then((ok) => {
+            if (!ok) return;
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1600);
+          })
+          .catch(() => undefined);
+      }}
+    />
+  );
+}
+
+function warningText(warnings: string[], t: (key: string) => string) {
+  return warnings.map((line) => (KNOWN_WARNINGS.has(line) ? t(line) : line)).join("\n");
+}
+
 export function LoadBanner({ onCancel, onRetry }: { onCancel: () => void; onRetry: () => void }) {
   const t = useT();
   const styles = useIptvStyles();
   const session = useIptvSession();
   const [open, setOpen] = useState(false);
   if (session.phase === "download" || session.phase === "parsing") {
-    const label = session.phase === "parsing"
-      ? t("Parsing {{count}} channels", { count: session.parsed })
-      : t("Downloading {{size}}", { size: formatDownloadSize(session.bytes) });
+    const label = session.note
+      ? t(session.note)
+      : session.phase === "parsing"
+        ? t("Parsing {{count}} channels", { count: session.parsed })
+        : t("Downloading {{size}}", { size: formatDownloadSize(session.bytes) });
     return (
       <View style={styles.card}>
         <View style={styles.row}>
@@ -91,7 +142,10 @@ export function LoadBanner({ onCancel, onRetry }: { onCancel: () => void; onRetr
     return (
       <View style={styles.card}>
         <Text style={styles.error}>{t(session.error)}</Text>
-        <Button label={t("Retry")} size="sm" onPress={onRetry} />
+        <View style={styles.row}>
+          <CopyDiagnostics text={session.report || session.error} />
+          <Button label={t("Retry")} size="sm" onPress={onRetry} />
+        </View>
       </View>
     );
   }
@@ -109,14 +163,20 @@ export function LoadBanner({ onCancel, onRetry }: { onCancel: () => void; onRetr
         <Text style={styles.error}>{parts.join(" ")}</Text>
         <View style={styles.row}>
           <Button label={open ? t("Hide details") : t("Show details")} size="sm" variant="secondary" onPress={() => setOpen((value) => !value)} />
+          <CopyDiagnostics text={session.report || diagnosis.details.join("\n")} />
           <Button label={t("Retry")} size="sm" onPress={onRetry} />
         </View>
         {open ? <Text style={styles.diag} selectable>{diagnosis.details.join("\n")}</Text> : null}
       </View>
     );
   }
-  if (session.warnings.length) {
-    return <Text style={styles.copy}>{session.warnings.join("\n")}</Text>;
+  if (session.warnings.length || session.report) {
+    return (
+      <View style={styles.card}>
+        {session.warnings.length ? <Text style={styles.copy}>{warningText(session.warnings, t)}</Text> : null}
+        <CopyDiagnostics text={session.report} />
+      </View>
+    );
   }
   return null;
 }

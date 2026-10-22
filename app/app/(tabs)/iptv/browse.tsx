@@ -67,6 +67,7 @@ export default function BrowsePlaylist() {
   const [pin, setPin] = useState("");
   const [unlocked, setUnlocked] = useState<string[]>([]);
   const [pinError, setPinError] = useState("");
+  const [playbackNote, setPlaybackNote] = useState("");
 
   useEffect(() => {
     const next = useIptv.getState().sources.find((item) => item.id === activeId);
@@ -131,6 +132,7 @@ export default function BrowsePlaylist() {
     try {
       const url = await playableUrl(source, item);
       remember({ sourceId: source.id, itemId: item.id, kind: item.kind, name: item.name, logo: item.logo, at: Date.now() });
+      setPlaybackNote("");
       setPlaying({ url, id: item.id, kind: item.kind });
     } catch (cause) {
       useIptvSession.getState().fail(source.id, cause instanceof Error ? cause.message : t("Could not reach the server"));
@@ -221,12 +223,13 @@ export default function BrowsePlaylist() {
           userAgent={agent}
           engine={engine}
           startPositionMs={resume[resumeKey(source.id, playing.kind, playing.id)] || 0}
-          onError={(text) => useIptvSession.getState().fail(source.id, text)}
+          onError={setPlaybackNote}
           onProgress={(position) => {
             if (position > 15000) setResume(resumeKey(source.id, playing.kind, playing.id), position);
           }}
         />
       ) : null}
+      {playbackNote ? <Text style={styles.error}>{t(playbackNote)}</Text> : null}
       {locked ? (
         <View style={styles.card}>
           <Text style={styles.label}>{t("Parental lock")}</Text>

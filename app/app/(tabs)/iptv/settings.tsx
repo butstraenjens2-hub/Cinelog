@@ -59,10 +59,16 @@ export default function PlaylistSettings() {
       <Text style={styles.title}>{source.name}</Text>
       <Text style={styles.copy}>{t("Each playlist can use its own player, user agent, stream format, and guide timeshift.")}</Text>
       <Text style={styles.label}>{t("Player")}</Text>
-      <View style={styles.row}>
-        {(["media3", "expo"] as const).map((id) => (
+      <View style={styles.grid}>
+        {(
+          [
+            ["media3", t("Media3")],
+            ["vlc", t("libVLC")],
+            ["expo", t("Expo player")],
+          ] as const
+        ).map(([id, label]) => (
           <Pressable key={id} style={[styles.chip, player === id ? styles.chipOn : null]} onPress={() => updateSource(source.id, { player: id })}>
-            <Text style={styles.chipText}>{id === "media3" ? t("Media3") : t("Expo player")}</Text>
+            <Text style={styles.chipText}>{label}</Text>
           </Pressable>
         ))}
       </View>

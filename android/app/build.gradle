@@ -161,8 +161,11 @@ android {
     }
     packagingOptions {
         jniLibs {
-            def enableLegacyPackaging = findProperty('expo.useLegacyPackaging') ?: 'false'
-            useLegacyPackaging = enableLegacyPackaging.toBoolean()
+            // Compress native libraries. libvlc.so is about 40 MB per ABI when
+            // stored uncompressed, which pushes a two-ABI APK past 100 MB.
+            useLegacyPackaging = true
+            // libVLC and React Native both ship this library.
+            pickFirsts += ["**/libc++_shared.so"]
         }
     }
     androidResources {
@@ -200,6 +203,9 @@ dependencies {
     implementation("androidx.media3:media3-ui:1.8.0")
     implementation("androidx.media3:media3-datasource-okhttp:1.8.0")
     implementation("com.squareup.okhttp3:okhttp:4.9.2")
+    // libVLC is LGPL-2.1. This links the published AAR only and does not
+    // copy the GPL VLC application source.
+    implementation("org.videolan.android:libvlc-all:3.6.5")
     // Installs the checked-in baseline profile so ART can speed up startup.
     implementation("androidx.profileinstaller:profileinstaller:1.4.1")
 

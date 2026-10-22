@@ -99,7 +99,7 @@ export default function TitleDetail() {
           userAgent={agent}
           engine={engine}
           startPositionMs={position}
-          onError={setMessage}
+          onError={(text) => setMessage(t(text))}
           onProgress={(value) => {
             if (value > 15000) setResume(resumeKey(source.id, item.kind === "series" ? "series" : item.kind, playing.id), value);
           }}

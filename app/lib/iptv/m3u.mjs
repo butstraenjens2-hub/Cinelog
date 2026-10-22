@@ -142,7 +142,7 @@ export function sanitizeSnippet(text) {
     .replace(/username=[^\s&]*/gi, "username=(hidden)")
     .replace(/\s+/g, " ")
     .trim()
-    .slice(0, 80);
+    .slice(0, 200);
 }
 
 /**

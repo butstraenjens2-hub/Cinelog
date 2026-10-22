@@ -1,10 +1,11 @@
 /**
  * Player for a playlist the viewer added.
- * Android uses Media3 directly so MPEG-TS, HLS, MP4 and MKV share the VLC headers.
+ * Android tries Media3 first. If that player reports an error, playback
+ * continues in libVLC. Choosing the Expo player stays on that player.
  * The legal live player is left unchanged.
  */
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { DeviceEventEmitter, Platform, requireNativeComponent, UIManager, View } from "react-native";
 
 import { BroadcastPlayer } from "@/components/player/BroadcastPlayer";
@@ -20,11 +21,23 @@ type NativePlayerProps = {
   style?: { width: string; aspectRatio: number };
 };
 
+type VlcPlayerProps = {
+  url: string;
+  userAgent: string;
+  startPosition?: number;
+  style?: { width: string; aspectRatio: number };
+};
+
 const nativeAvailable = Platform.OS === "android" && Boolean(UIManager.getViewManagerConfig?.("IptvPlayerView"));
+const vlcAvailable = Platform.OS === "android" && Boolean(UIManager.getViewManagerConfig?.("IptvVlcView"));
 
 const NativeIptvPlayer = nativeAvailable
   ? requireNativeComponent<NativePlayerProps>("IptvPlayerView")
   : null;
+
+const NativeVlcPlayer = vlcAvailable ? requireNativeComponent<VlcPlayerProps>("IptvVlcView") : null;
+
+const frame = { width: "100%" as const, aspectRatio: 16 / 9, backgroundColor: "#000" };
 
 export function IptvPlayer({
   url,
@@ -42,23 +55,37 @@ export function IptvPlayer({
   onProgress?: (positionMs: number, durationMs: number) => void;
 }) {
   const plan = playbackPlan(url);
-  const useMedia3 = engine !== "expo" && NativeIptvPlayer != null;
+  const [forced, setForced] = useState("");
 
   useEffect(() => {
-    if (!useMedia3) return undefined;
+    setForced("");
+  }, [engine, url]);
+
+  const useVlc = (engine === "vlc" || forced === "vlc") && NativeVlcPlayer != null;
+  const useMedia3 = !useVlc && engine !== "expo" && engine !== "vlc" && NativeIptvPlayer != null;
+
+  useEffect(() => {
+    if (!useMedia3 && !useVlc) return undefined;
     const subscription = DeviceEventEmitter.addListener(
       "iptvPlaybackError",
-      (event: { status?: number; message?: string }) => {
+      (event: { status?: number; message?: string; engine?: string }) => {
+        const fromVlc = event?.engine === "vlc";
+        if (!fromVlc && useMedia3 && NativeVlcPlayer) {
+          setForced("vlc");
+          onError?.("Playback failed. Trying libVLC.");
+          return;
+        }
+        if (fromVlc && !useVlc) return;
         const status = Number(event?.status || 0);
         const text = status > 0 ? `Playback: HTTP ${status}` : `Playback: ${event?.message || "Playback failed"}`;
         onError?.(text);
       },
     );
     return () => subscription.remove();
-  }, [onError, useMedia3]);
+  }, [onError, useMedia3, useVlc]);
 
   useEffect(() => {
-    if (!useMedia3 || !onProgress) return undefined;
+    if ((!useMedia3 && !useVlc) || !onProgress) return undefined;
     const subscription = DeviceEventEmitter.addListener(
       "iptvPlaybackProgress",
       (event: { positionMs?: number; durationMs?: number }) => {
@@ -66,11 +93,24 @@ export function IptvPlayer({
       },
     );
     return () => subscription.remove();
-  }, [onProgress, useMedia3]);
+  }, [onProgress, useMedia3, useVlc]);
+
+  if (useVlc && NativeVlcPlayer) {
+    return (
+      <View style={frame}>
+        <NativeVlcPlayer
+          url={url}
+          userAgent={userAgent}
+          startPosition={startPositionMs}
+          style={{ width: "100%", aspectRatio: 16 / 9 }}
+        />
+      </View>
+    );
+  }
 
   if (useMedia3 && NativeIptvPlayer) {
     return (
-      <View style={{ width: "100%", aspectRatio: 16 / 9, backgroundColor: "#000" }}>
+      <View style={frame}>
         <NativeIptvPlayer
           url={url}
           userAgent={userAgent}

@@ -37,8 +37,10 @@
 -keep class com.google.firebase.** { *; }
 -dontwarn com.google.firebase.**
 
-# IPTV fetch and Media3 player
+# IPTV fetch, Media3 player, and the libVLC bridge
 -keep class com.cinelog.app.iptv.** { *; }
+-keep class org.videolan.libvlc.** { *; }
+-dontwarn org.videolan.libvlc.**
 
 # Home-screen widget bridge
 -keep class com.cinelog.app.widget.** { *; }

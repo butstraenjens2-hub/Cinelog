@@ -104,7 +104,7 @@ object WidgetSnapshotStore {
       connectTimeout = 8000
       readTimeout = 8000
       instanceFollowRedirects = true
-      setRequestProperty("User-Agent", "CineLog/1.0.40")
+      setRequestProperty("User-Agent", "CineLog/1.0.41")
     }
     try {
       if (connection.responseCode !in 200..299) return null

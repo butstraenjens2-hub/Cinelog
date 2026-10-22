@@ -7,6 +7,9 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.modules.core.DeviceEventManagerModule
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import java.io.File
 import java.io.IOException
 import java.net.URI
@@ -24,6 +27,19 @@ class IptvFetchModule(
   @Volatile private var stop = false
 
   override fun getName(): String = "IptvHttp"
+
+  @ReactMethod
+  fun copyText(text: String, promise: Promise) {
+    reactContext.runOnUiQueueThread {
+      try {
+        val clipboard = reactContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        clipboard.setPrimaryClip(ClipData.newPlainText("CineLog", text.take(8000)))
+        promise.resolve(true)
+      } catch (error: Exception) {
+        promise.reject("iptv", "Could not copy diagnostics.")
+      }
+    }
+  }
 
   @ReactMethod
   fun cancel(promise: Promise) {
@@ -293,7 +309,7 @@ class IptvFetchModule(
 
   private fun snippetOf(file: File?): String {
     if (file == null || !file.exists() || file.length() == 0L) return ""
-    val raw = ByteArray(80)
+    val raw = ByteArray(220)
     val count = file.inputStream().use { it.read(raw).coerceAtLeast(0) }
     if (count <= 0) return ""
     if (count >= 2 && raw[0] == 0x1f.toByte() && raw[1] == 0x8b.toByte()) return "gzip binary"
@@ -312,7 +328,7 @@ class IptvFetchModule(
       .replace(Regex("username=[^\\s&]*", RegexOption.IGNORE_CASE), "username=(hidden)")
       .replace(Regex("\\s+"), " ")
       .trim()
-      .take(80)
+      .take(200)
   }
 
   private fun plain(body: String): String {

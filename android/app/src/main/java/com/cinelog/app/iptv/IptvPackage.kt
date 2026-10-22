@@ -7,8 +7,8 @@ import com.facebook.react.uimanager.ViewManager
 
 class IptvPackage : ReactPackage {
   override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> =
-    listOf(IptvFetchModule(reactContext))
+    listOf(IptvFetchModule(reactContext), IptvVlcModule(reactContext))
 
   override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> =
-    listOf(IptvPlayerManager())
+    listOf(IptvPlayerManager(), IptvVlcPlayerManager())
 }

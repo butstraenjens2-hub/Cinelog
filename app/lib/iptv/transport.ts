@@ -14,6 +14,7 @@ import {
   formatStepError,
 } from "@/lib/iptv/http.mjs";
 import type { IptvEntry } from "@/lib/iptv/load";
+import { kindFor } from "@/lib/iptv/m3u.mjs";
 import { xtreamApiUrl } from "@/lib/iptv/xtream.mjs";
 
 const { NativeModules, Platform } = ReactNative;
@@ -145,6 +146,53 @@ export function subscribeDownload(listener: (event: DownloadProgress) => void) {
 export async function cancelDownload() {
   const native = nativeModule();
   if (native?.cancel) await native.cancel();
+}
+
+type VlcNative = {
+  parsePlaylist: (url: string, userAgent: string) => Promise<{ items?: NativeRow[]; reason?: string }>;
+  cancel?: () => Promise<boolean>;
+};
+
+function vlcModule(): VlcNative | null {
+  const candidate = NativeModules.IptvVlc as VlcNative | undefined;
+  if (Platform.OS !== "android" || !candidate?.parsePlaylist) return null;
+  return candidate;
+}
+
+export async function cancelVlc() {
+  const native = NativeModules.IptvVlc as VlcNative | undefined;
+  if (native?.cancel) await native.cancel();
+}
+
+/** Opens the playlist with libVLC. Returns null when the library is not on this device. */
+export async function parseWithVlc(
+  url: string,
+  userAgent: string | undefined,
+): Promise<{ items: IptvEntry[]; reason: string } | null> {
+  const native = vlcModule();
+  if (!native) return null;
+  const result = await native.parsePlaylist(url, effectiveUserAgent(userAgent));
+  const items = (result?.items || []).flatMap((row) => {
+    const location = String(row.url || "");
+    if (!location.startsWith("http://") && !location.startsWith("https://")) return [];
+    const kindName = kindFor(location, String(row.group || ""));
+    const kind = kindName === "movie" || kindName === "series" ? kindName : "live";
+    const entry: IptvEntry = {
+      id: String(row.id || location),
+      name: String(row.name || "Channel"),
+      group: String(row.group || ""),
+      groupName: String(row.group || ""),
+      tvgId: String(row.tvgId || ""),
+      logo: String(row.logo || ""),
+      url: location,
+      kind,
+      archiveHours: 0,
+      streamId: 0,
+      extension: "",
+    };
+    return [entry];
+  });
+  return { items, reason: String(result?.reason || "") };
 }
 
 export async function readStep(url: string, userAgent: string | undefined, step: string): Promise<string> {

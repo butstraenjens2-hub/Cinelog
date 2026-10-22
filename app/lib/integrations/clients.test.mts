@@ -239,7 +239,7 @@ test("Jellyfin resume positions and progress stay on the server", async () => {
   assert.match(stream, /MediaSourceId=src%202/);
   for (const call of calls) {
     assert.equal(call.url.includes("jelly-token"), false);
-    assert.match(header(call.init, "X-Emby-Authorization"), /Version="1\.0\.40"/);
+    assert.match(header(call.init, "X-Emby-Authorization"), /Version="1\.0\.41"/);
     assert.equal(header(call.init, "X-Emby-Token"), "jelly-token");
   }
   const progress = calls.find((call) => call.url.includes("/Sessions/Playing/Progress"));

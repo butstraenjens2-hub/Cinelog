@@ -53,6 +53,8 @@ export interface PlaylistLoad {
   counts: SectionCounts;
   diagnosis: PlaylistDiagnosis | null;
   warnings: string[];
+  /** Sanitized steps from a fallback load. Empty when the first fetch succeeded. */
+  report?: string;
 }
 
 function toEntry(item: {

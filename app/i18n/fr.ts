@@ -690,4 +690,12 @@ export const FR: Record<string, string> = {
   "This playlist has no Xtream account.": "Cette liste n'a pas de compte Xtream.",
   "Each playlist can use its own player, user agent, stream format, and guide timeshift.":
     "Chaque liste peut avoir son lecteur, son agent, son format de flux et son décalage de guide.",
+  "Copy diagnostics": "Copier le diagnostic",
+  Copied: "Copié",
+  "Opening with libVLC": "Ouverture avec libVLC",
+  "Loading the Xtream API": "Chargement de l'API Xtream",
+  "Playback failed. Trying libVLC.": "Lecture impossible. Essai de libVLC.",
+  "Loaded with libVLC.": "Chargé avec libVLC.",
+  "Loaded with the Xtream API.": "Chargé avec l'API Xtream.",
+  libVLC: "libVLC",
 };

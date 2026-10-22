@@ -27,13 +27,23 @@ interface SessionState {
   bytes: number;
   parsed: number;
   error: string | null;
+  note: string;
+  report: string;
   updatedAt: number;
   programmes: GuideProgramme[];
   guideUrl: string;
   begin: (sourceId: string) => void;
   progress: (phase: "download" | "parsing", bytes: number, count: number) => void;
-  ready: (sourceId: string, items: IptvEntry[], counts: SectionCounts, diagnosis: PlaylistDiagnosis | null, warnings: string[]) => void;
-  fail: (sourceId: string, error: string) => void;
+  setNote: (note: string) => void;
+  ready: (
+    sourceId: string,
+    items: IptvEntry[],
+    counts: SectionCounts,
+    diagnosis: PlaylistDiagnosis | null,
+    warnings: string[],
+    report?: string,
+  ) => void;
+  fail: (sourceId: string, error: string, report?: string) => void;
   setGuide: (url: string, programmes: GuideProgramme[]) => void;
 }
 
@@ -49,6 +59,8 @@ export const useIptvSession = create<SessionState>((set) => ({
   bytes: 0,
   parsed: 0,
   error: null,
+  note: "",
+  report: "",
   updatedAt: 0,
   programmes: [],
   guideUrl: "",
@@ -63,21 +75,27 @@ export const useIptvSession = create<SessionState>((set) => ({
       bytes: 0,
       parsed: 0,
       error: null,
+      note: "",
+      report: "",
       programmes: [],
       guideUrl: "",
     }),
   progress: (phase, bytes, count) => set({ phase, bytes, parsed: count }),
-  ready: (sourceId, items, counts, diagnosis, warnings) =>
+  setNote: (note) => set({ note }),
+  ready: (sourceId, items, counts, diagnosis, warnings, report = "") =>
     set({
       sourceId,
       items,
       counts,
       diagnosis,
       warnings,
+      report,
+      note: "",
       phase: "ready",
       error: null,
       updatedAt: Date.now(),
     }),
-  fail: (sourceId, error) => set({ sourceId, phase: "error", error, items: [], diagnosis: null }),
+  fail: (sourceId, error, report = "") =>
+    set({ sourceId, phase: "error", error, report, note: "", items: [], diagnosis: null }),
   setGuide: (url, programmes) => set({ guideUrl: url, programmes }),
 }));

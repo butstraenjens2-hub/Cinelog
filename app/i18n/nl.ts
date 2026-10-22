@@ -688,4 +688,12 @@ export const NL: Record<string, string> = {
   "This playlist has no Xtream account.": "Deze afspeellijst heeft geen Xtream-account.",
   "Each playlist can use its own player, user agent, stream format, and guide timeshift.":
     "Elke afspeellijst kan een eigen speler, user-agent, streamformaat en gidstijd gebruiken.",
+  "Copy diagnostics": "Diagnose kopiëren",
+  Copied: "Gekopieerd",
+  "Opening with libVLC": "Openen met libVLC",
+  "Loading the Xtream API": "Xtream-API laden",
+  "Playback failed. Trying libVLC.": "Afspelen mislukt. libVLC proberen.",
+  "Loaded with libVLC.": "Geladen met libVLC.",
+  "Loaded with the Xtream API.": "Geladen met de Xtream-API.",
+  libVLC: "libVLC",
 };

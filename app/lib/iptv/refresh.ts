@@ -5,6 +5,7 @@
 
 import * as FileSystem from "expo-file-system/legacy";
 
+import { loadPlaylistFallbacks } from "@/lib/iptv/fallback.mjs";
 import { sectionCounts } from "@/lib/iptv/m3u.mjs";
 import {
   loadM3uText,
@@ -13,7 +14,7 @@ import {
   type PlaylistDiagnosis,
   type PlaylistLoad,
 } from "@/lib/iptv/load";
-import { cancelDownload, subscribeDownload } from "@/lib/iptv/transport";
+import { cancelDownload, cancelVlc, parseWithVlc, subscribeDownload } from "@/lib/iptv/transport";
 import { readSecret } from "@/lib/secrets";
 import { useIptvSession } from "@/store/iptv-session";
 import { iptvPasswordKey, sourceAgent, useIptv, type IptvSource } from "@/store/iptv-store";
@@ -42,7 +43,20 @@ export async function refreshPlaylist(source: IptvSource) {
       const text = await FileSystem.readAsStringAsync(source.fileUri);
       loaded = loadM3uText(text);
     } else if (source.kind === "m3u") {
-      loaded = await loadM3uUrl(source.url, agent);
+      loaded = (await loadPlaylistFallbacks({
+        url: source.url,
+        loadOkHttp: () => loadM3uUrl(source.url, agent),
+        loadVlc: async () => {
+          if (token !== generation) throw new Error("Cancelled");
+          useIptvSession.getState().setNote("Opening with libVLC");
+          return parseWithVlc(source.url, agent);
+        },
+        loadXtream: async (creds: { server: string; username: string; password: string }) => {
+          if (token !== generation) throw new Error("Cancelled");
+          useIptvSession.getState().setNote("Loading the Xtream API");
+          return loadXtreamCatalogue(creds.server, creds.username, creds.password, agent);
+        },
+      })) as PlaylistLoad;
     } else {
       const password = await readSecret(iptvPasswordKey(source.id));
       if (!password) throw new Error("The saved Xtream password is missing. Add the playlist again.");
@@ -63,7 +77,7 @@ export async function refreshPlaylist(source: IptvSource) {
       loaded = { items: catalogue.items, counts, diagnosis, warnings: catalogue.warnings };
     }
     if (token !== generation) return;
-    useIptvSession.getState().ready(source.id, loaded.items, loaded.counts, loaded.diagnosis, loaded.warnings);
+    useIptvSession.getState().ready(source.id, loaded.items, loaded.counts, loaded.diagnosis, loaded.warnings, loaded.report || "");
     useIptv.getState().setCatalogueMeta(source.id, loaded.counts, Date.now(), loaded.diagnosis?.reason || "");
   } catch (cause) {
     if (token !== generation) return;
@@ -83,5 +97,6 @@ export function cancelRefresh() {
   generation += 1;
   const sourceId = useIptvSession.getState().sourceId;
   void cancelDownload();
+  void cancelVlc();
   useIptvSession.getState().fail(sourceId, "The download was cancelled.");
 }

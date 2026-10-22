@@ -7,7 +7,7 @@ import { asRecord, asText, ownFetch } from "@/lib/own-server/http";
 import { simklTitle } from "@/lib/simkl/map.mjs";
 
 const APP = "CineLog";
-const VERSION = "1.0.40";
+const VERSION = "1.0.41";
 
 export interface SimklDevice {
   deviceCode: string;

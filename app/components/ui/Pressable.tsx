@@ -89,6 +89,14 @@ export function TouchableScale({
         animate(1);
         props.onHoverOut?.(event);
       }}
+      onFocus={(event) => {
+        if (enableHover) animate(hoverScale);
+        props.onFocus?.(event);
+      }}
+      onBlur={(event) => {
+        animate(1);
+        props.onBlur?.(event);
+      }}
     >
       <Animated.View style={[style, animatedStyle]}>{children}</Animated.View>
     </RNPressable>

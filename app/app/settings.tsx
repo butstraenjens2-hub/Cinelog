@@ -14,6 +14,7 @@ import { Screen } from "@/components/ui/Screen";
 import { FONTS, RADIUS, SPACING } from "@/constants/theme";
 import { makeStyles, useTheme } from "@/theme";
 import { useResponsive } from "@/hooks/useResponsive";
+import { ExportCalendarButton } from "@/components/integrations/ExportCalendarButton";
 import { SafeAlert } from "@/lib/safeAlert";
 import { useAuth } from "@/store/auth-store";
 import { useLibrary } from "@/store/library-store";
@@ -178,30 +179,18 @@ export default function SettingsScreen() {
             <SettingsRow
               label={t("Sonarr, Radarr and Trakt")}
               hint={t(
-                "Connect your own servers. API keys stay in the device keystore. CineLog does not add indexers or download clients.",
+                "Connect your own servers. API keys stay in the device keystore. CineLog does not add indexers, download clients, or unlicensed sources.",
               )}
             />
-            <Button
-              label="Sonarr"
-              icon="chevron-forward"
-              variant="secondary"
-              size="sm"
-              onPress={() => router.push("/integrations/sonarr" as never)}
-            />
-            <Button
-              label="Radarr"
-              icon="chevron-forward"
-              variant="secondary"
-              size="sm"
-              onPress={() => router.push("/integrations/radarr" as never)}
-            />
-            <Button
-              label="Trakt"
-              icon="chevron-forward"
-              variant="secondary"
-              size="sm"
-              onPress={() => router.push("/integrations/trakt" as never)}
-            />
+            <Button label="Sonarr" icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/sonarr" as never)} />
+            <Button label="Radarr" icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/radarr" as never)} />
+            <Button label="Trakt" icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/trakt" as never)} />
+            <Button label={t("Jellyfin or Emby")} icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/jellyfin" as never)} />
+            <Button label={t("Seerr or Overseerr")} icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/seerr" as never)} />
+            <Button label="Tautulli" icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/tautulli" as never)} />
+            <Button label={t("Kodi remote")} icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/kodi" as never)} />
+            <Button label="SIMKL" icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/simkl" as never)} />
+            <Button label={t("Household profiles")} icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/profiles" as never)} />
           </SettingsSection>
 
           <SettingsSection
@@ -232,6 +221,11 @@ export default function SettingsScreen() {
               value={notifications.watchlistReminders}
               onChange={(value) => setNotification("watchlistReminders", value)}
             />
+            <SettingsRow
+              label={t("Export calendar")}
+              hint={t("Share upcoming episodes of shows you follow as an .ics file.")}
+            />
+            <ExportCalendarButton />
           </SettingsSection>
 
           <SettingsSection title={t("Privacy")} icon="lock-closed-outline">

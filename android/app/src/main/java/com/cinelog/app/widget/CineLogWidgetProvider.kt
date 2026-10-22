@@ -25,10 +25,15 @@ class CineLogWidgetProvider : AppWidgetProvider() {
 
   companion object {
     fun requestUpdate(context: Context) {
+      broadcastUpdate(context, CineLogWidgetProvider::class.java)
+      broadcastUpdate(context, CineLogWatchlistWidgetProvider::class.java)
+    }
+
+    private fun broadcastUpdate(context: Context, provider: Class<out AppWidgetProvider>) {
       val manager = AppWidgetManager.getInstance(context)
-      val ids = manager.getAppWidgetIds(ComponentName(context, CineLogWidgetProvider::class.java))
+      val ids = manager.getAppWidgetIds(ComponentName(context, provider))
       if (ids.isEmpty()) return
-      val intent = Intent(context, CineLogWidgetProvider::class.java).apply {
+      val intent = Intent(context, provider).apply {
         action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
         putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
       }

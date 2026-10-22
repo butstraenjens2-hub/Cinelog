@@ -14,6 +14,7 @@ import { SeoHead } from "@/components/SeoHead";
 import { Carousel } from "@/components/media/Carousel";
 import { CastCard } from "@/components/media/CastCard";
 import { AddToServarrButton } from "@/components/integrations/AddToServarrButton";
+import { RequestOnSeerrButton } from "@/components/integrations/RequestOnSeerrButton";
 import { WhereToWatch } from "@/components/media/WhereToWatch";
 import { PosterCard } from "@/components/media/PosterCard";
 import { TitleHero } from "@/components/media/TitleHero";
@@ -184,8 +185,9 @@ export default function MovieDetailScreen() {
 
           <WhereToWatch type="movie" tmdbId={movie.tmdbId} gutter={gutter} />
 
-          <View style={{ paddingHorizontal: gutter }}>
+          <View style={{ paddingHorizontal: gutter, gap: 8 }}>
             <AddToServarrButton kind="radarr" tmdbId={movie.tmdbId} title={movie.title} />
+            <RequestOnSeerrButton mediaType="movie" tmdbId={movie.tmdbId} />
           </View>
 
           {movie.collection ? (

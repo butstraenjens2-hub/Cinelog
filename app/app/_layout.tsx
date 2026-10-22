@@ -69,6 +69,13 @@ function ThemedShell() {
           <Stack.Screen name="integrations/sonarr" />
           <Stack.Screen name="integrations/radarr" />
           <Stack.Screen name="integrations/trakt" />
+          <Stack.Screen name="integrations/jellyfin" />
+          <Stack.Screen name="integrations/seerr" />
+          <Stack.Screen name="integrations/tautulli" />
+          <Stack.Screen name="integrations/kodi" />
+          <Stack.Screen name="integrations/simkl" />
+          <Stack.Screen name="integrations/profiles" />
+          <Stack.Screen name="library/index" />
           <Stack.Screen name="addons" />
           <Stack.Screen name="legal" />
           <Stack.Screen name="import" />

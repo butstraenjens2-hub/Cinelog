@@ -15,6 +15,7 @@ import { CineLogLogo } from "@/components/brand/CineLogLogo";
 import { NAV_ITEMS } from "@/components/navigation/navItems";
 import { FONTS, LAYOUT, RADIUS, SPACING } from "@/constants/theme";
 import { makeStyles, useTheme } from "@/theme";
+import { useResponsive } from "@/hooks/useResponsive";
 import { Pressable } from "@/components/ui/Pressable";
 
 export interface DesktopNavigationProps {
@@ -37,6 +38,7 @@ export function DesktopNavigation({
   const t = useT();
   const { colors } = useTheme();
   const styles = useStyles();
+  const { isTv } = useResponsive();
   const insets = useSafeAreaInsets();
   const statusBarHeight =
     insets.top > 0
@@ -77,15 +79,17 @@ export function DesktopNavigation({
               accessibilityRole="tab"
               accessibilityState={{ selected: active }}
               accessibilityLabel={t(item.label)}
-              style={({ hovered }) => [
+              style={({ hovered, focused }) => [
                 styles.link,
+                isTv ? styles.linkTv : null,
                 hovered && !active ? styles.linkHovered : null,
+                focused ? styles.linkFocused : null,
                 active ? styles.linkActive : null,
               ]}
             >
               <Ionicons
                 name={active ? item.activeIcon : item.icon}
-                size={15}
+                size={isTv ? 22 : 15}
                 color={active ? colors.textPrimary : colors.textSecondary}
               />
               <Text
@@ -161,6 +165,15 @@ const useStyles = makeStyles((c, t) => ({
     paddingHorizontal: SPACING.lg,
     height: 38,
     borderRadius: RADIUS.pill,
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  linkTv: {
+    height: 52,
+    paddingHorizontal: SPACING.xl,
+  },
+  linkFocused: {
+    borderColor: c.accent,
   },
   linkHovered: {
     backgroundColor: c.glass,

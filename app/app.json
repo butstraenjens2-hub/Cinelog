@@ -3,8 +3,8 @@
     "name": "CineLog",
     "slug": "nexora-sports-stream",
     "description": "Discover movies and series, build your watchlist, track what you watch and find your next favorite with CineLog.",
-    "version": "1.0.33",
-    "runtimeVersion": "1.0.33",
+    "version": "1.0.34",
+    "runtimeVersion": "1.0.34",
     "updates": {
       "enabled": true,
       "checkAutomatically": "ON_LOAD",

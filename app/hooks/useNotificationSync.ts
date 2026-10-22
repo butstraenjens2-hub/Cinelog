@@ -37,6 +37,11 @@ export function useNotificationSync(): void {
   }, [prefs, watchlist, episodeSignature]);
 
   useEffect(() => {
+    const items = watchlist.slice(0, 4).map((item) => ({
+      title: item.title,
+      subtitle: item.year ? String(item.year) : "",
+      path: item.type === "movie" ? `/movie/${item.tmdbId}` : `/series/${item.tmdbId}`,
+    }));
     const next = upcoming[0];
     const saved = watchlist[0];
     if (next) {
@@ -44,6 +49,7 @@ export function useNotificationSync(): void {
         title: next.series.title,
         subtitle: `${episodeCode(next.seasonNumber, next.episodeNumber)} · ${next.airDate}`,
         path: `/series/${next.series.tmdbId}`,
+        items,
       });
       return;
     }
@@ -52,6 +58,7 @@ export function useNotificationSync(): void {
         title: saved.title,
         subtitle: "On your watchlist",
         path: saved.type === "movie" ? `/movie/${saved.tmdbId}` : `/series/${saved.tmdbId}`,
+        items,
       });
       return;
     }
@@ -59,6 +66,7 @@ export function useNotificationSync(): void {
       title: "CineLog",
       subtitle: "Discover what to watch",
       path: "",
+      items,
     });
   }, [episodeSignature, upcoming, watchlist]);
 }

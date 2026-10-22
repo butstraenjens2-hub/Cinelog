@@ -9,6 +9,7 @@ export interface WidgetSnapshot {
   title: string;
   subtitle: string;
   path: string;
+  items?: Array<{ title: string; subtitle: string; path: string }>;
 }
 
 export function publishWidgetSnapshot(snapshot: WidgetSnapshot): void {

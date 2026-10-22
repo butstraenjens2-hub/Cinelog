@@ -13,6 +13,7 @@ import { Footer } from "@/components/layout/Footer";
 import { SeoHead } from "@/components/SeoHead";
 import { Carousel } from "@/components/media/Carousel";
 import { CastCard } from "@/components/media/CastCard";
+import { AddToServarrButton } from "@/components/integrations/AddToServarrButton";
 import { WhereToWatch } from "@/components/media/WhereToWatch";
 import { PosterCard } from "@/components/media/PosterCard";
 import { TitleHero } from "@/components/media/TitleHero";
@@ -25,7 +26,7 @@ import { SPACING } from "@/constants/theme";
 import { useResponsive } from "@/hooks/useResponsive";
 import { useTrailerPlayer } from "@/hooks/useTrailerPlayer";
 import { openPerson, openTitle, parseIdParam } from "@/lib/cinelog/navigation";
-import { useMovieDetail } from "@/lib/cinelog/queries";
+import { useCollection, useMovieDetail } from "@/lib/cinelog/queries";
 import { formatRuntime } from "@/lib/format";
 import type { MediaSummary } from "@/lib/cinelog/types";
 import { toLibraryRef, useLibrary } from "@/store/library-store";
@@ -44,6 +45,7 @@ export default function MovieDetailScreen() {
 
   const detail = useMovieDetail(tmdbId);
   const movie = detail.data?.title;
+  const collection = useCollection(movie?.collection?.id ?? null);
 
   const trailer = useTrailerPlayer(detail.data?.trailers[0] ?? null);
   const openTrailer = trailer.open;
@@ -181,6 +183,21 @@ export default function MovieDetailScreen() {
           </View>
 
           <WhereToWatch type="movie" tmdbId={movie.tmdbId} gutter={gutter} />
+
+          <View style={{ paddingHorizontal: gutter }}>
+            <AddToServarrButton kind="radarr" tmdbId={movie.tmdbId} title={movie.title} />
+          </View>
+
+          {movie.collection ? (
+            <Carousel
+              title={t("Part of {{name}}", { name: movie.collection.name })}
+              items={collection.data?.parts ?? []}
+              isLoading={collection.isLoading}
+              itemWidth={railPosterWidth}
+              keyExtractor={(item) => item.id}
+              renderItem={renderPoster}
+            />
+          ) : null}
 
           {cast.length > 0 ? (
             <Carousel

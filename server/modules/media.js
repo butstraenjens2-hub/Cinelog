@@ -100,6 +100,13 @@ function normalizeMovie(item, omdbData = null) {
     revenue: item.revenue ?? null,
     imdbId: item.imdb_id ?? null,
     collectionId: item.belongs_to_collection?.id ?? null,
+    collection: item.belongs_to_collection
+      ? {
+          id: item.belongs_to_collection.id,
+          name: item.belongs_to_collection.name ?? "",
+          poster: imgUrl(item.belongs_to_collection.poster_path, "w500"),
+        }
+      : null,
     source: "tmdb",
   };
 
@@ -309,7 +316,12 @@ router.get("/movies", async (req, res) => {
   const fromYear = req.query.from_year ? String(req.query.from_year) : null;
   const toYear = req.query.to_year ? String(req.query.to_year) : null;
   const companyId = req.query.company_id ? String(req.query.company_id) : null;
-  const key = `media_v2_movies_${page}_${genre ?? "any"}_${sort}_${fromYear ?? ""}_${toYear ?? ""}_${companyId ?? ""}`;
+  const watchRegionRaw = String(req.query.watch_region || "").toUpperCase();
+  const watchRegion = /^[A-Z]{2}$/.test(watchRegionRaw) ? watchRegionRaw : null;
+  const monetization = req.query.monetization
+    ? String(req.query.monetization)
+    : null;
+  const key = `media_v2_movies_${page}_${genre ?? "any"}_${sort}_${fromYear ?? ""}_${toYear ?? ""}_${companyId ?? ""}_${watchRegion ?? ""}_${monetization ?? ""}`;
 
   try {
     const { value, isCached } = await cache.getOrFetch(
@@ -325,6 +337,14 @@ router.get("/movies", async (req, res) => {
             : {}),
           ...(toYear ? { "primary_release_date.lte": `${toYear}-12-31` } : {}),
           ...(companyId ? { with_companies: companyId } : {}),
+          ...(watchRegion
+            ? {
+                watch_region: watchRegion,
+                with_watch_monetization_types:
+                  monetization || "flatrate|free|ads",
+                "vote_count.gte": "50",
+              }
+            : {}),
         };
         const data = await tmdb("/discover/movie", params, "tmdb:movies");
         return {
@@ -361,7 +381,10 @@ router.get("/series", async (req, res) => {
   const genre = req.query.genre ? String(req.query.genre) : null;
   const sort = String(req.query.sort || "popularity.desc");
   const networkId = req.query.network_id ? String(req.query.network_id) : null;
-  const key = `media_v2_series_${page}_${genre ?? "any"}_${sort}_${networkId ?? ""}`;
+  const feed = ["airing_today", "on_the_air"].includes(String(req.query.feed))
+    ? String(req.query.feed)
+    : "";
+  const key = `media_v2_series_${page}_${genre ?? "any"}_${sort}_${networkId ?? ""}_${feed}`;
 
   try {
     const { value, isCached } = await cache.getOrFetch(
@@ -374,7 +397,9 @@ router.get("/series", async (req, res) => {
           ...(genre ? { with_genres: genre } : {}),
           ...(networkId ? { with_networks: networkId } : {}),
         };
-        const data = await tmdb("/discover/tv", params, "tmdb:series");
+        const data = feed
+          ? await tmdb(`/tv/${feed}`, { page }, `tmdb:${feed}`)
+          : await tmdb("/discover/tv", params, "tmdb:series");
         return {
           page: data.page,
           total_pages: Math.min(data.total_pages ?? 1, 500),
@@ -574,6 +599,9 @@ router.get("/search", async (req, res) => {
   const q = String(req.query.q || "").trim();
   const type = String(req.query.type || "all");
   const page = Math.max(Number(req.query.page || 1), 1);
+  const year = /^\d{4}$/.test(String(req.query.year || ""))
+    ? String(req.query.year)
+    : "";
 
   if (!q)
     return send(
@@ -592,36 +620,73 @@ router.get("/search", async (req, res) => {
       400,
     );
 
-  const key = `media_v2_search_${type}_${page}_${Buffer.from(q).toString("base64").slice(0, 30)}`;
+  const key = `media_v2_search_${type}_${page}_${year}_${Buffer.from(q).toString("base64").slice(0, 30)}`;
 
   try {
     const { value, isCached } = await cache.getOrFetch(
       key,
       TTL.CATALOG,
       async () => {
-        let endpoint = "/search/multi";
-        if (type === "movie") endpoint = "/search/movie";
-        if (type === "series") endpoint = "/search/tv";
+        const peoplePromise =
+          page === 1 && type !== "movie" && type !== "series"
+            ? tmdb("/search/person", { query: q, page: 1 }, "tmdb:search-person")
+            : Promise.resolve({ results: [] });
 
-        const data = await tmdb(endpoint, { query: q, page }, "tmdb:search");
+        let data;
+        if (year && type !== "person") {
+          const [movies, shows] = await Promise.all([
+            type === "series"
+              ? Promise.resolve({ results: [], total_pages: 1, page: 1, total_results: 0 })
+              : tmdb(
+                  "/search/movie",
+                  { query: q, page, primary_release_year: year },
+                  "tmdb:search",
+                ),
+            type === "movie"
+              ? Promise.resolve({ results: [], total_pages: 1, page: 1, total_results: 0 })
+              : tmdb(
+                  "/search/tv",
+                  { query: q, page, first_air_date_year: year },
+                  "tmdb:search",
+                ),
+          ]);
+          data = {
+            page,
+            total_pages: Math.max(movies.total_pages || 1, shows.total_pages || 1),
+            total_results: (movies.total_results || 0) + (shows.total_results || 0),
+            results: [
+              ...(movies.results ?? []).map((item) => ({ ...item, media_type: "movie" })),
+              ...(shows.results ?? []).map((item) => ({ ...item, media_type: "tv" })),
+            ],
+          };
+        } else if (type === "person") {
+          data = { page: 1, total_pages: 1, total_results: 0, results: [] };
+        } else {
+          let endpoint = "/search/multi";
+          if (type === "movie") endpoint = "/search/movie";
+          if (type === "series") endpoint = "/search/tv";
+          data = await tmdb(endpoint, { query: q, page }, "tmdb:search");
+        }
+
+        const peopleData = await peoplePromise;
         return {
           page: data.page,
           total_pages: data.total_pages,
           total_results: data.total_results,
           results: (data.results ?? [])
-            .filter((r) => {
-              const mt = r.media_type ?? type;
-              return (
-                mt === "movie" ||
-                mt === "tv" ||
-                mt === "series" ||
-                !!r.title ||
-                !!r.name
-              );
-            })
             .filter((r) => r.media_type !== "person")
             .map(normalizeListItem)
             .filter(Boolean),
+          people: (peopleData.results ?? []).slice(0, 12).map((person) => ({
+            id: person.id,
+            name: person.name,
+            photo: imgUrl(person.profile_path, "w185"),
+            knownForDepartment: person.known_for_department ?? null,
+            knownForTitles: (person.known_for ?? [])
+              .map((item) => item.title || item.name)
+              .filter(Boolean)
+              .slice(0, 3),
+          })).filter((person) => person.id && person.name),
         };
       },
     );
@@ -811,6 +876,40 @@ router.get("/trailer/:type/:id", async (req, res) => {
     return send(
       res,
       err("TRAILER_UNAVAILABLE", "Trailer unavailable", { source: "tmdb" }),
+      503,
+    );
+  }
+});
+
+/**
+ * GET /api/media/collection/:id
+ * Movies that belong to one TMDB collection.
+ */
+router.get("/collection/:id", async (req, res) => {
+  const gate = checkTmdb(res);
+  if (gate) return gate;
+  const id = parseInt(req.params.id, 10);
+  if (!id) {
+    return send(res, err("INVALID_ID", "Invalid collection ID", { source: "tmdb" }), 400);
+  }
+  const key = `media_v2_collection_${id}`;
+  try {
+    const { value, isCached } = await cache.getOrFetch(key, TTL.MEDIA_DETAIL, async () => {
+      const data = await tmdb(`/collection/${id}`, {}, "tmdb:collection");
+      return {
+        id: data.id,
+        name: data.name ?? "",
+        overview: data.overview ?? "",
+        poster: imgUrl(data.poster_path, "w500"),
+        parts: (data.parts ?? []).map(normalizeListItem).filter(Boolean),
+      };
+    });
+    return send(res, ok(value, { source: "tmdb", isCached }));
+  } catch (e) {
+    log.error("collection error", { id, message: e.message });
+    return send(
+      res,
+      err("COLLECTION_UNAVAILABLE", "Collection unavailable", { source: "tmdb" }),
       503,
     );
   }

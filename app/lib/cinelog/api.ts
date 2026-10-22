@@ -20,6 +20,7 @@ import type {
   Episode,
   MediaSummary,
   MediaType,
+  CollectionRef,
   Movie,
   MovieListKey,
   PagedResult,
@@ -47,7 +48,8 @@ const MIN_VOTES = 50;
  * People search needs TMDB's `/search/person`, which the media API doesn't
  * expose, so the People tab only appears when the direct transport is enabled.
  */
-export const supportsPeopleSearch = hasDirectTmdbKey;
+/** People search is available through both the media API and direct TMDB. */
+export const supportsPeopleSearch = true;
 
 type RawRecord = Record<string, unknown>;
 
@@ -404,6 +406,7 @@ function parseMovieDetail(input: unknown): TitleDetail<Movie> {
     imdbId: str(raw.imdbId ?? raw.imdb_id) || null,
     directors: jobNames(crew, "Director"),
     writers: jobNames(crew, "Writer", "Screenplay"),
+    collection: parseCollection(raw.collection ?? raw.belongs_to_collection),
   };
 
   return {
@@ -486,6 +489,19 @@ function parseNextEpisode(input: unknown): NextEpisode | null {
   };
 }
 
+function parseCollection(input: unknown): CollectionRef | null {
+  if (!input || typeof input !== "object") return null;
+  const raw = input as RawRecord;
+  const id = num(raw.id);
+  const name = str(raw.name);
+  if (!id || !name) return null;
+  return {
+    id,
+    name,
+    poster: image(raw.poster ?? raw.poster_path, "w500"),
+  };
+}
+
 function parsePersonResult(input: unknown): PersonResult | null {
   if (!input || typeof input !== "object") return null;
   const raw = input as RawRecord;
@@ -498,11 +514,13 @@ function parsePersonResult(input: unknown): PersonResult | null {
     photo: image(raw.photo ?? raw.profile_path, "w300"),
     knownForDepartment:
       str(raw.knownForDepartment ?? raw.known_for_department) || null,
-    knownForTitles: (Array.isArray(raw.known_for)
-      ? (raw.known_for as RawRecord[]).map((entry) =>
-          str(entry.title || entry.name),
-        )
-      : []
+    knownForTitles: (Array.isArray(raw.knownForTitles)
+      ? (raw.knownForTitles as unknown[]).map((entry) => str(entry))
+      : Array.isArray(raw.known_for)
+        ? (raw.known_for as RawRecord[]).map((entry) =>
+            str(entry.title || entry.name),
+          )
+        : []
     )
       .filter(Boolean)
       .slice(0, 3),
@@ -533,6 +551,8 @@ interface ListSpec {
   allowUnrated?: boolean;
   /** Keep only titles first released within this many months. */
   withinMonths?: number;
+  /** Extra query passed to the CineLog media API (direct TMDB uses `direct`). */
+  serverParams?: Record<string, string | number>;
   /** Endpoint used when the direct TMDB transport is enabled. */
   direct: { path: string; params?: Record<string, string | number> };
 }
@@ -564,6 +584,19 @@ const MOVIE_LISTS: Record<MovieListKey, ListSpec> = {
     allowUnrated: true,
     direct: { path: "/movie/upcoming" },
   },
+  streaming_be: {
+    sort: "popularity.desc",
+    serverParams: { watch_region: "BE", monetization: "flatrate|free|ads" },
+    direct: {
+      path: "/discover/movie",
+      params: {
+        sort_by: "popularity.desc",
+        watch_region: "BE",
+        with_watch_monetization_types: "flatrate|free|ads",
+        "vote_count.gte": MIN_VOTES,
+      },
+    },
+  },
 };
 
 const SERIES_LISTS: Record<SeriesListKey, ListSpec> = {
@@ -589,6 +622,14 @@ const SERIES_LISTS: Record<SeriesListKey, ListSpec> = {
       path: "/discover/tv",
       params: { sort_by: "first_air_date.desc", "vote_count.gte": 20 },
     },
+  },
+  airing_today: {
+    serverParams: { feed: "airing_today" },
+    direct: { path: "/tv/airing_today" },
+  },
+  on_the_air: {
+    serverParams: { feed: "on_the_air" },
+    direct: { path: "/tv/on_the_air" },
   },
 };
 
@@ -662,6 +703,7 @@ async function fetchList(
       sort: spec.sort,
       from_year: years?.from,
       to_year: years?.to,
+      ...(spec.serverParams ?? {}),
     })}`,
   );
   return parseItemsPage(data, type, spec);
@@ -814,21 +856,49 @@ export async function fetchSeason(
 
 // ── Search ───────────────────────────────────────────────────────────────────
 
+export async function fetchCollection(
+  collectionId: number,
+): Promise<{ name: string; parts: MediaSummary[] }> {
+  if (hasDirectTmdbKey) {
+    const data = await tmdbDirect<RawRecord>(`/collection/${collectionId}`);
+    return {
+      name: str(data.name),
+      parts: presentable(parseSummaries(data.parts, "movie"), false),
+    };
+  }
+  const data = await apiData<RawRecord>(`/api/media/collection/${collectionId}`);
+  return {
+    name: str(data.name),
+    parts: presentable(parseSummaries(data.parts ?? data.results, "movie"), false),
+  };
+}
+
 export async function searchMedia(
   queryText: string,
   page = 1,
+  year?: number,
 ): Promise<SearchResults> {
   const trimmed = queryText.trim();
-  if (trimmed.length < 2) return { movies: [], series: [], people: [] };
+  const empty = { movies: [], series: [], people: [], page: 1, totalPages: 1 };
+  if (trimmed.length < 2) return empty;
 
   const byPopularity = (left: MediaSummary, right: MediaSummary) =>
     right.popularity - left.popularity;
 
   if (hasDirectTmdbKey) {
-    const data = await tmdbDirect<{ results?: unknown[] }>("/search/multi", {
-      query: trimmed,
-      page,
-    });
+    const data = year
+      ? await searchTmdbByYear(trimmed, page, year)
+      : await tmdbDirect<{ results?: unknown[]; total_pages?: number }>("/search/multi", {
+          query: trimmed,
+          page,
+        });
+    const peopleData =
+      page === 1
+        ? await tmdbDirect<{ results?: unknown[] }>("/search/person", {
+            query: trimmed,
+            page: 1,
+          })
+        : { results: [] };
     const movies: MediaSummary[] = [];
     const series: MediaSummary[] = [];
     const people: PersonResult[] = [];
@@ -844,15 +914,22 @@ export async function searchMedia(
       if (summary.type === "movie") movies.push(summary);
       else series.push(summary);
     }
+    const apiPeople = (peopleData.results ?? [])
+      .map((entry) => parsePersonResult(entry))
+      .filter((person): person is PersonResult => person !== null);
+    const mergedPeople = new Map<number, PersonResult>();
+    for (const person of [...apiPeople, ...people]) mergedPeople.set(person.id, person);
     return {
       movies: movies.sort(byPopularity),
       series: series.sort(byPopularity),
-      people,
+      people: [...mergedPeople.values()],
+      page,
+      totalPages: num((data as RawRecord).total_pages) || 1,
     };
   }
 
   const data = await apiData<RawRecord>(
-    `/api/media/search${query({ q: trimmed, type: "all", page })}`,
+    `/api/media/search${query({ q: trimmed, type: "all", page, year })}`,
   );
   const all = parseSummaries(data.results);
   return {
@@ -862,7 +939,39 @@ export async function searchMedia(
     series: all
       .filter((item) => item.type === "series" && item.poster)
       .sort(byPopularity),
-    people: [],
+    people: (Array.isArray(data.people) ? data.people : [])
+      .map((entry) => parsePersonResult(entry))
+      .filter((person): person is PersonResult => person !== null),
+    page: num(data.page) || page,
+    totalPages: num(data.totalPages ?? data.total_pages) || 1,
+  };
+}
+
+async function searchTmdbByYear(queryText: string, page: number, year: number) {
+  const [movies, series] = await Promise.all([
+    tmdbDirect<RawRecord>("/search/movie", {
+      query: queryText,
+      page,
+      primary_release_year: year,
+    }),
+    tmdbDirect<RawRecord>("/search/tv", {
+      query: queryText,
+      page,
+      first_air_date_year: year,
+    }),
+  ]);
+  return {
+    results: [
+      ...((movies.results as unknown[]) ?? []).map((entry) => ({
+        ...(entry as RawRecord),
+        media_type: "movie",
+      })),
+      ...((series.results as unknown[]) ?? []).map((entry) => ({
+        ...(entry as RawRecord),
+        media_type: "tv",
+      })),
+    ],
+    total_pages: Math.max(num(movies.total_pages), num(series.total_pages), 1),
   };
 }
 

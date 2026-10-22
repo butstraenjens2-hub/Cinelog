@@ -37,6 +37,9 @@
 -keep class com.google.firebase.** { *; }
 -dontwarn com.google.firebase.**
 
+# Home-screen widget bridge
+-keep class com.cinelog.app.widget.** { *; }
+
 # Kotlin metadata used by expo-modules-core reflection
 -keep class kotlin.Metadata { *; }
 -keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod

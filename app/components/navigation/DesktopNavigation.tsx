@@ -144,6 +144,7 @@ const useStyles = makeStyles((c, t) => ({
   links: {
     flexDirection: "row",
     alignItems: "center",
+    flexWrap: "wrap",
     gap: SPACING.xs,
     flex: 1,
     justifyContent: "center",

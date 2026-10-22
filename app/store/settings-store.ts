@@ -29,6 +29,16 @@ export const LANGUAGES: { code: LanguageCode; label: string }[] = [
   { code: "fr", label: "Français" },
 ];
 
+/** Regions passed to TMDB watch providers. Belgium is the default. */
+export const WATCH_REGIONS: { code: string; label: string }[] = [
+  { code: "BE", label: "Belgium" },
+  { code: "NL", label: "Netherlands" },
+  { code: "FR", label: "France" },
+  { code: "DE", label: "Germany" },
+  { code: "GB", label: "United Kingdom" },
+  { code: "US", label: "United States" },
+];
+
 export interface NotificationPrefs {
   newReleases: boolean;
   /** New episodes of followed series (defaults on; absent in older saves). */
@@ -49,12 +59,15 @@ export interface SettingsState {
   language: LanguageCode;
   notifications: NotificationPrefs;
   privacy: PrivacyPrefs;
+  /** ISO 3166-1 alpha-2 region for legal where-to-watch offers. */
+  watchRegion: string;
   streamPrefs: UserStreamPreferences;
   streamProviders: Record<StreamProviderId, ProviderRuntimeConfig>;
   setTheme: (theme: ThemeMode) => void;
   setLanguage: (language: LanguageCode) => void;
   setNotification: (key: keyof NotificationPrefs, value: boolean) => void;
   setPrivacy: (key: keyof PrivacyPrefs, value: boolean) => void;
+  setWatchRegion: (region: string) => void;
   setStreamPref: <K extends keyof UserStreamPreferences>(
     key: K,
     value: UserStreamPreferences[K],
@@ -79,6 +92,7 @@ export const useSettings = create<SettingsState>()(
         saveWatchHistory: true,
         publicProfile: false,
       },
+      watchRegion: "BE",
       streamPrefs: { ...DEFAULT_STREAM_PREFERENCES },
       streamProviders: {
         torrentio: defaultProviderConfig("torrentio"),
@@ -93,6 +107,8 @@ export const useSettings = create<SettingsState>()(
         })),
       setPrivacy: (key, value) =>
         set((state) => ({ privacy: { ...state.privacy, [key]: value } })),
+      setWatchRegion: (region) =>
+        set({ watchRegion: String(region || "BE").toUpperCase() }),
       setStreamPref: (key, value) =>
         set((state) => ({ streamPrefs: { ...state.streamPrefs, [key]: value } })),
       setStreamProviderEndpoint: (id, endpoint) =>
@@ -120,11 +136,12 @@ export const useSettings = create<SettingsState>()(
     {
       name: "cinelog.settings.v1",
       storage: createJSONStorage(() => AsyncStorage),
-      version: 2,
+      version: 3,
       migrate: (persisted) => {
         const state = (persisted ?? {}) as Partial<SettingsState>;
         return {
           ...state,
+          watchRegion: state.watchRegion || "BE",
           streamPrefs: state.streamPrefs ?? { ...DEFAULT_STREAM_PREFERENCES },
           streamProviders:
             state.streamProviders ?? {

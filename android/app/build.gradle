@@ -193,6 +193,8 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
+    // Installs the checked-in baseline profile so ART can speed up startup.
+    implementation("androidx.profileinstaller:profileinstaller:1.4.1")
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";

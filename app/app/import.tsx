@@ -207,8 +207,16 @@ export default function ImportScreen() {
             </View>
           ) : null}
 
+          <Button
+            label={t("Sync with Trakt")}
+            variant="secondary"
+            size="sm"
+            onPress={() => router.push("/integrations/trakt" as never)}
+          />
           <Text style={styles.muted}>
-            {t("Trakt import is not available yet: it needs a registered Trakt app.")}
+            {t(
+              "Trakt uses your own API application. Connect it to sync your watchlist and watched progress.",
+            )}
           </Text>
         </View>
       </Screen>

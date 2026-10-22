@@ -19,6 +19,7 @@ import { useAuth } from "@/store/auth-store";
 import { useLibrary } from "@/store/library-store";
 import {
   LANGUAGES,
+  WATCH_REGIONS,
   useSettings,
   type LanguageCode,
   type ThemeMode,
@@ -45,6 +46,8 @@ export default function SettingsScreen() {
   const setTheme = useSettings((state) => state.setTheme);
   const language = useSettings((state) => state.language);
   const setLanguage = useSettings((state) => state.setLanguage);
+  const watchRegion = useSettings((state) => state.watchRegion);
+  const setWatchRegion = useSettings((state) => state.setWatchRegion);
   const notifications = useSettings((state) => state.notifications);
   const setNotification = useSettings((state) => state.setNotification);
   const privacy = useSettings((state) => state.privacy);
@@ -124,6 +127,23 @@ export default function SettingsScreen() {
             </View>
           </SettingsSection>
 
+          <SettingsSection title={t("Where to watch")} icon="tv-outline">
+            <SettingsRow
+              label={t("Region")}
+              hint={t("Legal streaming, rent and buy offers from TMDB for this country.")}
+            />
+            <View style={styles.pillRow}>
+              {WATCH_REGIONS.map((option) => (
+                <GenrePill
+                  key={option.code}
+                  label={option.code}
+                  selected={watchRegion === option.code}
+                  onPress={() => setWatchRegion(option.code)}
+                />
+              ))}
+            </View>
+          </SettingsSection>
+
           <SettingsSection title={t("Import")} icon="download-outline">
             <SettingsRow
               label={t("Import from Letterboxd")}
@@ -151,6 +171,36 @@ export default function SettingsScreen() {
               variant="secondary"
               size="sm"
               onPress={() => router.push("/addons")}
+            />
+          </SettingsSection>
+
+          <SettingsSection title={t("Your servers")} icon="server-outline">
+            <SettingsRow
+              label={t("Sonarr, Radarr and Trakt")}
+              hint={t(
+                "Connect your own servers. API keys stay in the device keystore. CineLog does not add indexers or download clients.",
+              )}
+            />
+            <Button
+              label="Sonarr"
+              icon="chevron-forward"
+              variant="secondary"
+              size="sm"
+              onPress={() => router.push("/integrations/sonarr" as never)}
+            />
+            <Button
+              label="Radarr"
+              icon="chevron-forward"
+              variant="secondary"
+              size="sm"
+              onPress={() => router.push("/integrations/radarr" as never)}
+            />
+            <Button
+              label="Trakt"
+              icon="chevron-forward"
+              variant="secondary"
+              size="sm"
+              onPress={() => router.push("/integrations/trakt" as never)}
             />
           </SettingsSection>
 

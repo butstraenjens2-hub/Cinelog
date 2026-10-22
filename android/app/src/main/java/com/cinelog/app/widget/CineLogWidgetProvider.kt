@@ -7,10 +7,10 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.view.View
 import android.widget.RemoteViews
 import com.cinelog.app.MainActivity
 import com.cinelog.app.R
-import org.json.JSONObject
 
 class CineLogWidgetProvider : AppWidgetProvider() {
   override fun onUpdate(
@@ -42,22 +42,19 @@ class CineLogWidgetProvider : AppWidgetProvider() {
 
     fun buildViews(context: Context): RemoteViews {
       val views = RemoteViews(context.packageName, R.layout.cinelog_widget)
-      val raw = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY, null)
-      var title = "CineLog"
-      var subtitle = "Discover what to watch"
-      var path = ""
-      if (!raw.isNullOrBlank()) {
-        try {
-          val json = JSONObject(raw)
-          title = json.optString("title", title)
-          subtitle = json.optString("subtitle", subtitle)
-          path = json.optString("path", "")
-        } catch (_: Exception) {
-          // Keep the default copy if the snapshot is unreadable.
-        }
-      }
+      val card = WidgetSnapshotStore.featured(WidgetSnapshotStore.read(context))
+      val title = card.title
+      val subtitle = card.subtitle
+      val path = card.path
       views.setTextViewText(R.id.widget_title, title)
       views.setTextViewText(R.id.widget_subtitle, subtitle)
+      val poster = WidgetSnapshotStore.bitmap(card.posterFile, 180)
+      if (poster != null) {
+        views.setImageViewBitmap(R.id.widget_poster, poster)
+        views.setViewVisibility(R.id.widget_poster, View.VISIBLE)
+      } else {
+        views.setViewVisibility(R.id.widget_poster, View.GONE)
+      }
       val launch = Intent(context, MainActivity::class.java).apply {
         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         if (path.startsWith("/movie/") || path.startsWith("/series/")) {

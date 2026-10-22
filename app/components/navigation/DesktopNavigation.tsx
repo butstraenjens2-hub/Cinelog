@@ -5,7 +5,7 @@
  */
 
 import React from "react";
-import { Platform, StatusBar, StyleSheet, Text, View } from "react-native";
+import { Platform, ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -69,7 +69,12 @@ export function DesktopNavigation({
         <CineLogLogo size={26} />
       </Pressable>
 
-      <View style={styles.links}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.linkScroll}
+        contentContainerStyle={styles.links}
+      >
         {NAV_ITEMS.map((item) => {
           const active = activeRoute === item.route;
           return (
@@ -100,7 +105,7 @@ export function DesktopNavigation({
             </Pressable>
           );
         })}
-      </View>
+      </ScrollView>
 
       <Pressable
         onPress={onOpenProfile}
@@ -145,22 +150,28 @@ const useStyles = makeStyles((c, t) => ({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: c.border,
   },
+  linkScroll: {
+    flex: 1,
+    minWidth: 0,
+  },
   links: {
     flexDirection: "row",
     alignItems: "center",
-    flexWrap: "wrap",
+    flexWrap: "nowrap",
+    flexGrow: 1,
     gap: SPACING.xs,
-    flex: 1,
-    justifyContent: "center",
+    paddingRight: SPACING.sm,
   },
   logoPressable: {
-    minWidth: 0,
-    flexShrink: 1,
+    flexShrink: 0,
     paddingRight: SPACING.sm,
   },
   link: {
     flexDirection: "row",
     alignItems: "center",
+    flexGrow: 1,
+    flexShrink: 0,
+    justifyContent: "center",
     gap: SPACING.sm,
     paddingHorizontal: SPACING.lg,
     height: 38,
@@ -184,6 +195,7 @@ const useStyles = makeStyles((c, t) => ({
   linkText: {
     fontFamily: FONTS.medium,
     fontSize: 14,
+    flexShrink: 0,
     color: c.textSecondary,
   },
   linkTextActive: {

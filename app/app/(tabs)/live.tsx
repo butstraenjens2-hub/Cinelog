@@ -7,12 +7,11 @@
 import React, { useMemo, useState } from "react";
 import { Linking, ScrollView, Text, View } from "react-native";
 import { router } from "expo-router";
-import { useVideoPlayer, VideoView } from "expo-video";
-
 import { useT } from "@/i18n";
 import { SeoHead } from "@/components/SeoHead";
 import { MobileHeader } from "@/components/navigation/MobileHeader";
 import { Screen } from "@/components/ui/Screen";
+import { BroadcastPlayer } from "@/components/player/BroadcastPlayer";
 import { Pressable } from "@/components/ui/Pressable";
 import { FONTS, RADIUS, SPACING } from "@/constants/theme";
 import { makeStyles, useTheme } from "@/theme";
@@ -24,21 +23,6 @@ import { useAuth } from "@/store/auth-store";
 const HOUR = 60 * 60 * 1000;
 const WINDOW = 8 * HOUR;
 const HOUR_WIDTH = 148;
-
-function LivePlayer({ url }: { url: string }) {
-  const player = useVideoPlayer(url, (instance) => {
-    instance.loop = true;
-    instance.play();
-  });
-  return (
-    <VideoView
-      player={player}
-      style={{ width: "100%", aspectRatio: 16 / 9, backgroundColor: "#000" }}
-      nativeControls
-      contentFit="contain"
-    />
-  );
-}
 
 export default function LiveTvScreen() {
   const t = useT();
@@ -74,7 +58,7 @@ export default function LiveTvScreen() {
     <>
       <SeoHead
         title={t("Live TV")}
-        description="Official free live channels from NASA and France 24, plus links to DW and NHK WORLD-JAPAN."
+        description="Official free live channels from France 24, DW and Al Jazeera. NASA+ and NHK WORLD-JAPAN open their official pages."
       />
       <Screen
         reserveBottomNav
@@ -101,7 +85,7 @@ export default function LiveTvScreen() {
             )}
             <Text style={styles.copy}>
               {t(
-                "Official free channels only. NASA TV is public domain. France 24 plays from the broadcaster's own stream. Other public services open their official live page.",
+                "Official free channels from France 24, DW and Al Jazeera. NASA+ and NHK WORLD-JAPAN open their official pages.",
               )}
             </Text>
           </View>
@@ -135,7 +119,7 @@ export default function LiveTvScreen() {
 
           <View style={{ paddingHorizontal: gutter, gap: SPACING.sm }}>
             {selected.streamUrl ? (
-              <LivePlayer key={selected.streamUrl} url={selected.streamUrl} />
+              <BroadcastPlayer key={selected.streamUrl} url={selected.streamUrl} />
             ) : (
               <Pressable
                 onPress={() => void Linking.openURL(selected.officialUrl)}

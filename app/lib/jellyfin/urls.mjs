@@ -3,7 +3,7 @@
  * The access token is a header, never part of these paths.
  */
 
-export function mediaBrowserAuthHeader(version = "1.0.34") {
+export function mediaBrowserAuthHeader(version = "1.0.35") {
   return `MediaBrowser Client="CineLog", Device="CineLog", DeviceId="cinelog", Version="${version}"`;
 }
 

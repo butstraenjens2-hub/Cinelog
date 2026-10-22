@@ -447,7 +447,7 @@ export default function SeriesDetailScreen() {
 
           <View style={{ paddingHorizontal: gutter, gap: 8 }}>
             <AddToServarrButton kind="sonarr" tmdbId={series.tmdbId} title={series.title} />
-            <RequestOnSeerrButton mediaType="tv" tmdbId={series.tmdbId} />
+            <RequestOnSeerrButton mediaType="tv" tmdbId={series.tmdbId} title={series.title} />
           </View>
 
           {cast.length > 0 ? (

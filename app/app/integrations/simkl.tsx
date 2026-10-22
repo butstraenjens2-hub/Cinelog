@@ -11,7 +11,12 @@ import { useResponsive } from "@/hooks/useResponsive";
 import { useTheme } from "@/theme";
 import { SECRET, writeSecret } from "@/lib/secrets";
 import { pollSimklDevice, startSimklDevice } from "@/lib/simkl/api";
-import { pullSimklLibrary, pushSimklProgressFromDevice, pushSimklWatchlistFromDevice } from "@/lib/simkl/sync";
+import {
+  pullSimklLibrary,
+  pushSimklProgressFromDevice,
+  pushSimklRatingsFromDevice,
+  pushSimklWatchlistFromDevice,
+} from "@/lib/simkl/sync";
 import { useIntegrations } from "@/store/integrations-store";
 
 export default function SimklScreen() {
@@ -123,6 +128,12 @@ export default function SimklScreen() {
           variant="secondary"
           size="sm"
           onPress={() => void run(pushSimklProgressFromDevice, "Watched progress sent to SIMKL.")}
+        />
+        <Button
+          label={t("Push ratings to SIMKL")}
+          variant="secondary"
+          size="sm"
+          onPress={() => void run(pushSimklRatingsFromDevice, "Ratings sent to SIMKL.")}
         />
         {message ? <Text style={styles.message}>{message}</Text> : null}
       </View>

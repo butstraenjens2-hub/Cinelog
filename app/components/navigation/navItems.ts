@@ -4,7 +4,7 @@ import type { Ionicons } from "@expo/vector-icons";
 
 export interface NavItem {
   /** Route inside the tab group. */
-  route: "/home" | "/movies" | "/series" | "/live" | "/search" | "/watchlist";
+  route: "/home" | "/movies" | "/series" | "/live" | "/iptv" | "/search" | "/watchlist";
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
   activeIcon: keyof typeof Ionicons.glyphMap;
@@ -16,6 +16,7 @@ export const NAV_ITEMS: NavItem[] = [
   { route: "/movies", label: "Movies", icon: "film-outline", activeIcon: "film" },
   { route: "/series", label: "Series", icon: "tv-outline", activeIcon: "tv" },
   { route: "/live", label: "Live TV", icon: "radio-outline", activeIcon: "radio" },
+  { route: "/iptv", label: "IPTV", icon: "list-outline", activeIcon: "list" },
   { route: "/search", label: "Search", icon: "search-outline", activeIcon: "search" },
   {
     route: "/watchlist",

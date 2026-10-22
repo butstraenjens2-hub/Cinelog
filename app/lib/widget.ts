@@ -5,11 +5,19 @@
 
 import { NativeModules, Platform } from "react-native";
 
+export interface WidgetSnapshotItem {
+  title: string;
+  subtitle: string;
+  path: string;
+  poster?: string | null;
+}
+
 export interface WidgetSnapshot {
   title: string;
   subtitle: string;
   path: string;
-  items?: Array<{ title: string; subtitle: string; path: string }>;
+  poster?: string | null;
+  items?: WidgetSnapshotItem[];
 }
 
 export function publishWidgetSnapshot(snapshot: WidgetSnapshot): void {

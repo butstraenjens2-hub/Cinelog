@@ -1,12 +1,12 @@
 /**
  * Legal live channels.
  *
- * In-app playback is limited to streams we verified on the broadcaster's own
- * host: NASA TV (US government, public domain) and France 24 (France Médias
- * Monde's public HLS on live.france24.com, CORS open, playlist responding).
- * DW and NHK WORLD-JAPAN are free official services, but their direct playlist
- * URLs were not confirmed from the broadcaster page, so they open that page
- * instead of playing inside CineLog. No third-party IPTV playlist is bundled.
+ * In-app playback is limited to HLS playlists whose media segments respond on
+ * the broadcaster's own host: France 24 (France Médias Monde), DW English
+ * (Deutsche Welle), and Al Jazeera English and Arabic (getaj.net).
+ * NASA's old public HLS master still answers, but its variant playlists 404
+ * after NASA TV moved to NASA+, so those rows open the official page.
+ * NHK WORLD-JAPAN stays a link as well. No third-party IPTV playlist is bundled.
  */
 
 export interface LegalChannel {
@@ -27,21 +27,17 @@ export const LEGAL_CHANNELS: LegalChannel[] = [
     broadcaster: "NASA",
     language: "English",
     summary:
-      "NASA TV Public is a free public-domain channel from NASA with mission coverage and agency programming.",
+      "NASA replaced the NASA TV channel with NASA+. The old public playlist no longer has playable segments, so this opens NASA's official live page.",
     officialUrl: "https://www.nasa.gov/live/",
-    streamUrl:
-      "https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8",
   },
   {
     id: "nasa-media",
-    name: "NASA TV Media",
+    name: "NASA+",
     broadcaster: "NASA",
     language: "English",
     summary:
-      "NASA TV Media is NASA's public-domain media channel for briefings and mission events.",
-    officialUrl: "https://www.nasa.gov/live/",
-    streamUrl:
-      "https://ntv2.akamaized.net/hls/live/2013923/NASA-NTV2-HLS/master.m3u8",
+      "NASA+ is NASA's free streaming platform for live events and agency programming. Watch it on the official NASA+ page.",
+    officialUrl: "https://plus.nasa.gov/",
   },
   {
     id: "france24-en",
@@ -71,8 +67,30 @@ export const LEGAL_CHANNELS: LegalChannel[] = [
     broadcaster: "Deutsche Welle",
     language: "English",
     summary:
-      "DW English is the free international television service of Germany's public broadcaster. Watch it on DW's official live page.",
-    officialUrl: "https://www.dw.com/en/live-tv/s-100825",
+      "DW English is the free international television service of Germany's public broadcaster Deutsche Welle.",
+    officialUrl: "https://www.dw.com/en/live-tv",
+    streamUrl:
+      "https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8",
+  },
+  {
+    id: "aljazeera-en",
+    name: "Al Jazeera English",
+    broadcaster: "Al Jazeera Media Network",
+    language: "English",
+    summary:
+      "Al Jazeera English is the free international English news channel of Al Jazeera Media Network.",
+    officialUrl: "https://www.aljazeera.com/live",
+    streamUrl: "https://live-hls-web-aje-fa.getaj.net/AJE/index.m3u8",
+  },
+  {
+    id: "aljazeera-ar",
+    name: "Al Jazeera Arabic",
+    broadcaster: "Al Jazeera Media Network",
+    language: "العربية",
+    summary:
+      "Al Jazeera Arabic is the free Arabic news channel of Al Jazeera Media Network.",
+    officialUrl: "https://www.aljazeera.net/live",
+    streamUrl: "https://live-hls-web-aja.getaj.net/AJA/index.m3u8",
   },
   {
     id: "nhk-world",

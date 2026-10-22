@@ -3,7 +3,7 @@
  */
 
 import { kodiRpc } from "@/lib/kodi/rpc.mjs";
-import { asRecord, asText, ownFetch } from "@/lib/own-server/http";
+import { asNumber, asRecord, asText, ownFetch } from "@/lib/own-server/http";
 
 function headers(username: string, password: string): Record<string, string> {
   if (!username.trim()) return {};
@@ -64,6 +64,78 @@ export async function kodiNowPlaying(
     return `${show}${code} · ${title}`;
   }
   return title;
+}
+
+export interface KodiLibraryItem {
+  id: number;
+  title: string;
+  kind: "movie" | "show" | "episode";
+  meta: string;
+}
+
+export async function kodiMovies(baseUrl: string, username: string, password: string): Promise<KodiLibraryItem[]> {
+  const result = await rpc<Record<string, unknown>>(baseUrl, username, password, "VideoLibrary.GetMovies", {
+    properties: ["title", "year"],
+  });
+  const rows = Array.isArray(result.movies) ? result.movies : [];
+  return rows.map((row) => {
+    const raw = asRecord(row);
+    return {
+      id: asNumber(raw.movieid),
+      title: asText(raw.title) || asText(raw.label) || "Movie",
+      kind: "movie" as const,
+      meta: asNumber(raw.year) ? String(asNumber(raw.year)) : "",
+    };
+  }).filter((item) => item.id);
+}
+
+export async function kodiShows(baseUrl: string, username: string, password: string): Promise<KodiLibraryItem[]> {
+  const result = await rpc<Record<string, unknown>>(baseUrl, username, password, "VideoLibrary.GetTVShows", {
+    properties: ["title", "year"],
+  });
+  const rows = Array.isArray(result.tvshows) ? result.tvshows : [];
+  return rows.map((row) => {
+    const raw = asRecord(row);
+    return {
+      id: asNumber(raw.tvshowid),
+      title: asText(raw.title) || asText(raw.label) || "Series",
+      kind: "show" as const,
+      meta: "show",
+    };
+  }).filter((item) => item.id);
+}
+
+export async function kodiEpisodes(
+  baseUrl: string,
+  username: string,
+  password: string,
+  showId: number,
+): Promise<KodiLibraryItem[]> {
+  const result = await rpc<Record<string, unknown>>(baseUrl, username, password, "VideoLibrary.GetEpisodes", {
+    tvshowid: showId,
+    properties: ["title", "season", "episode"],
+  });
+  const rows = Array.isArray(result.episodes) ? result.episodes : [];
+  return rows.map((row) => {
+    const raw = asRecord(row);
+    const season = asNumber(raw.season);
+    const episode = asNumber(raw.episode);
+    return {
+      id: asNumber(raw.episodeid),
+      title: asText(raw.title) || "Episode",
+      kind: "episode" as const,
+      meta: `S${String(season).padStart(2, "0")}E${String(episode).padStart(2, "0")}`,
+    };
+  }).filter((item) => item.id);
+}
+
+export async function kodiPlay(
+  baseUrl: string,
+  username: string,
+  password: string,
+  item: { movieid?: number; episodeid?: number },
+): Promise<void> {
+  await rpc(baseUrl, username, password, "Player.Open", { item });
 }
 
 export function kodiInput(

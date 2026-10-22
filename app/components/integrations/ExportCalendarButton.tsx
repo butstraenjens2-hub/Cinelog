@@ -6,13 +6,11 @@ import React, { useState } from "react";
 
 import { useT } from "@/i18n";
 import { Button } from "@/components/ui/Button";
+import { collectFollowedCalendar } from "@/lib/calendar/collect";
 import { shareIcs } from "@/lib/calendar/share";
-import { episodeCode } from "@/lib/cinelog/upNext";
-import { useTrackedSeries } from "@/hooks/useTrackedSeries";
 
 export function ExportCalendarButton() {
   const t = useT();
-  const { upcoming } = useTrackedSeries(true);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -20,14 +18,8 @@ export function ExportCalendarButton() {
     setBusy(true);
     setMessage(null);
     try {
-      const result = await shareIcs(
-        upcoming.map((episode) => ({
-          uid: `${episode.series.id}-s${episode.seasonNumber}e${episode.episodeNumber}-${episode.airDate}`,
-          title: `${episode.series.title} ${episodeCode(episode.seasonNumber, episode.episodeNumber)}`,
-          start: episode.airDate,
-          description: episode.name || "",
-        })),
-      );
+      const events = await collectFollowedCalendar();
+      const result = await shareIcs(events);
       setMessage(result === "empty" ? t("No upcoming episodes to export.") : t("Calendar shared."));
     } catch (cause) {
       setMessage(cause instanceof Error ? cause.message : t("Could not reach the server"));

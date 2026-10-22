@@ -6,7 +6,7 @@
  */
 
 import React from "react";
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -47,8 +47,10 @@ export function BottomNavigation({
     >
       {/* Glass effect blur on all platforms */}
       <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
-      <View
-        style={[
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={[
           styles.row,
           compact ? styles.rowCompact : null,
         ]}
@@ -85,15 +87,13 @@ export function BottomNavigation({
                   active ? styles.labelActive : null,
                 ]}
                 numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.82}
               >
                 {t(item.label)}
               </Text>
             </Pressable>
           );
         })}
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -111,6 +111,7 @@ const useStyles = makeStyles((c, t) => ({
   row: {
     flexDirection: "row",
     alignItems: "center",
+    flexGrow: 1,
     minHeight: LAYOUT.bottomNavHeight,
     paddingTop: 3,
     paddingBottom: 6,
@@ -121,12 +122,13 @@ const useStyles = makeStyles((c, t) => ({
     paddingBottom: 8,
   },
   tab: {
-    flex: 1,
-    minWidth: 0,
+    flexGrow: 1,
+    flexShrink: 0,
+    minWidth: 76,
     alignItems: "center",
     justifyContent: "center",
     gap: 3,
-    paddingHorizontal: 1,
+    paddingHorizontal: 6,
   },
   tabCompact: {
     gap: 2,
@@ -160,7 +162,6 @@ const useStyles = makeStyles((c, t) => ({
     paddingHorizontal: 1,
     textAlign: "center",
     color: c.textMuted,
-    width: "100%",
     includeFontPadding: false,
   },
   labelCompact: {

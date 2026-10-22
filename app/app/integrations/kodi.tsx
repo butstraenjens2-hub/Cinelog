@@ -9,7 +9,16 @@ import { Button } from "@/components/ui/Button";
 import { Screen } from "@/components/ui/Screen";
 import { useResponsive } from "@/hooks/useResponsive";
 import { useTheme } from "@/theme";
-import { kodiInput, kodiNowPlaying, testKodi } from "@/lib/kodi/api";
+import {
+  kodiEpisodes,
+  kodiInput,
+  kodiMovies,
+  kodiNowPlaying,
+  kodiPlay,
+  kodiShows,
+  testKodi,
+  type KodiLibraryItem,
+} from "@/lib/kodi/api";
 import { readSecret, SECRET, writeSecret } from "@/lib/secrets";
 import { useIntegrations } from "@/store/integrations-store";
 
@@ -28,6 +37,8 @@ export default function KodiScreen() {
   const [draftUser, setDraftUser] = useState(username);
   const [password, setPassword] = useState("");
   const [now, setNow] = useState("");
+  const [library, setLibrary] = useState<KodiLibraryItem[]>([]);
+  const [episodes, setEpisodes] = useState<KodiLibraryItem[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -63,6 +74,46 @@ export default function KodiScreen() {
       if (action === "playpause" || action === "stop") {
         setNow(await kodiNowPlaying(current.url, current.user, current.password));
       }
+    } catch (cause) {
+      setMessage(cause instanceof Error ? cause.message : t("Could not reach the server"));
+    }
+  };
+
+  const browse = async () => {
+    const current = creds();
+    setBusy(true);
+    setMessage(null);
+    try {
+      const [movies, shows] = await Promise.all([
+        kodiMovies(current.url, current.user, current.password),
+        kodiShows(current.url, current.user, current.password),
+      ]);
+      setLibrary([...movies, ...shows]);
+      setEpisodes([]);
+      if (!movies.length && !shows.length) setMessage(t("Nothing in this library yet."));
+    } catch (cause) {
+      setMessage(cause instanceof Error ? cause.message : t("Could not reach the server"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const playOnKodi = async (item: KodiLibraryItem) => {
+    const current = creds();
+    setMessage(null);
+    try {
+      if (item.kind === "show") {
+        setEpisodes(await kodiEpisodes(current.url, current.user, current.password, item.id));
+        return;
+      }
+      await kodiPlay(
+        current.url,
+        current.user,
+        current.password,
+        item.kind === "movie" ? { movieid: item.id } : { episodeid: item.id },
+      );
+      setNow(item.title);
+      setMessage(t("Play on Kodi"));
     } catch (cause) {
       setMessage(cause instanceof Error ? cause.message : t("Could not reach the server"));
     }
@@ -126,6 +177,25 @@ export default function KodiScreen() {
             <Button key={action} label={labelFor(action)} variant="secondary" size="sm" onPress={() => void send(action)} />
           ))}
         </View>
+        <Text style={styles.label}>{t("Library on Kodi")}</Text>
+        <Button label={t("Library on Kodi")} variant="secondary" size="sm" loading={busy} onPress={() => void browse()} />
+        {library.map((item) => (
+          <View key={`${item.kind}-${item.id}`} style={styles.card}>
+            <Text style={styles.cardTitle}>{item.title}</Text>
+            <Text style={styles.cardMeta}>{item.kind === "movie" ? t("Movies") : item.kind === "show" ? t("Series") : item.meta}</Text>
+            <Button
+              label={item.kind === "show" ? t("Episodes") : t("Play on Kodi")}
+              size="sm"
+              onPress={() => void playOnKodi(item)}
+            />
+          </View>
+        ))}
+        {episodes.map((item) => (
+          <View key={`episode-${item.id}`} style={styles.card}>
+            <Text style={styles.cardTitle}>{item.meta ? `${item.meta} ${item.title}` : item.title}</Text>
+            <Button label={t("Play on Kodi")} size="sm" onPress={() => void playOnKodi(item)} />
+          </View>
+        ))}
         {message ? <Text style={styles.message}>{message}</Text> : null}
       </View>
     </Screen>

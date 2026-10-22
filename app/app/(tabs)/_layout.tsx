@@ -68,6 +68,7 @@ export default function TabsLayout() {
         <Tabs.Screen name="movies" options={{ title: "Movies" }} />
         <Tabs.Screen name="series" options={{ title: "Series" }} />
         <Tabs.Screen name="live" options={{ title: "Live TV" }} />
+        <Tabs.Screen name="iptv" options={{ title: "IPTV" }} />
         <Tabs.Screen name="search" options={{ title: "Search" }} />
         <Tabs.Screen name="watchlist" options={{ title: "Watchlist" }} />
       </Tabs>

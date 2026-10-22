@@ -35,7 +35,7 @@ export async function ownFetch<T>(
 
   const headers: Record<string, string> = {
     Accept: "application/json",
-    "User-Agent": "CineLog/1.0.34",
+    "User-Agent": "CineLog/1.0.35",
     ...options.headers,
   };
   let body: string | undefined;

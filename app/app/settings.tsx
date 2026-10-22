@@ -1,6 +1,7 @@
 import React from "react";
 import { Platform, StatusBar, Switch, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import Constants from "expo-constants";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -78,6 +79,7 @@ export default function SettingsScreen() {
         </View>
 
         <View style={[styles.sections, { paddingHorizontal: gutter }]}>
+          <SettingsGroup title={t("Account and profiles")}>
           <SettingsSection title={t("Profile")} icon="person-circle-outline">
             <SettingsRow
               label={user ? user.displayName : t("Not signed in")}
@@ -94,6 +96,13 @@ export default function SettingsScreen() {
                 size="sm"
               />
             )}
+            <Button
+              label={t("Household profiles")}
+              icon="chevron-forward"
+              variant="secondary"
+              size="sm"
+              onPress={() => router.push("/integrations/profiles" as never)}
+            />
           </SettingsSection>
 
           <SettingsSection title={t("Appearance")} icon="color-palette-outline">
@@ -128,23 +137,6 @@ export default function SettingsScreen() {
             </View>
           </SettingsSection>
 
-          <SettingsSection title={t("Where to watch")} icon="tv-outline">
-            <SettingsRow
-              label={t("Region")}
-              hint={t("Legal streaming, rent and buy offers from TMDB for this country.")}
-            />
-            <View style={styles.pillRow}>
-              {WATCH_REGIONS.map((option) => (
-                <GenrePill
-                  key={option.code}
-                  label={option.code}
-                  selected={watchRegion === option.code}
-                  onPress={() => setWatchRegion(option.code)}
-                />
-              ))}
-            </View>
-          </SettingsSection>
-
           <SettingsSection title={t("Import")} icon="download-outline">
             <SettingsRow
               label={t("Import from Letterboxd")}
@@ -157,75 +149,6 @@ export default function SettingsScreen() {
               size="sm"
               onPress={() => router.push("/import" as never)}
             />
-          </SettingsSection>
-
-          <SettingsSection title={t("Addons")} icon="rocket-outline">
-            <SettingsRow
-              label={t("Streaming sources")}
-              hint={t(
-                "Manage Torrentio, Comet, Meteor and automatic best-source playback.",
-              )}
-            />
-            <Button
-              label={t("Open Addons")}
-              icon="chevron-forward"
-              variant="secondary"
-              size="sm"
-              onPress={() => router.push("/addons")}
-            />
-          </SettingsSection>
-
-          <SettingsSection title={t("Your servers")} icon="server-outline">
-            <SettingsRow
-              label={t("Sonarr, Radarr and Trakt")}
-              hint={t(
-                "Connect your own servers. API keys stay in the device keystore. CineLog does not add indexers, download clients, or unlicensed sources.",
-              )}
-            />
-            <Button label="Sonarr" icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/sonarr" as never)} />
-            <Button label="Radarr" icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/radarr" as never)} />
-            <Button label="Trakt" icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/trakt" as never)} />
-            <Button label={t("Jellyfin or Emby")} icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/jellyfin" as never)} />
-            <Button label={t("Seerr or Overseerr")} icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/seerr" as never)} />
-            <Button label="Tautulli" icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/tautulli" as never)} />
-            <Button label={t("Kodi remote")} icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/kodi" as never)} />
-            <Button label="SIMKL" icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/simkl" as never)} />
-            <Button label={t("Household profiles")} icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/profiles" as never)} />
-          </SettingsSection>
-
-          <SettingsSection
-            title={t("Notifications")}
-            icon="notifications-outline"
-          >
-            <ToggleRow
-              label={t("New releases")}
-              hint={t("Tell me when something I follow lands")}
-              value={notifications.newReleases}
-              onChange={(value) => setNotification("newReleases", value)}
-            />
-            <ToggleRow
-              label={t("New episodes")}
-              hint={t("Remind me when a show I follow airs a new episode")}
-              value={notifications.newEpisodes !== false}
-              onChange={(value) => setNotification("newEpisodes", value)}
-            />
-            <ToggleRow
-              label={t("Recommendations")}
-              hint={t("Weekly picks based on what I watch")}
-              value={notifications.recommendations}
-              onChange={(value) => setNotification("recommendations", value)}
-            />
-            <ToggleRow
-              label={t("Watchlist reminders")}
-              hint={t("Nudge me about titles I saved but haven't watched")}
-              value={notifications.watchlistReminders}
-              onChange={(value) => setNotification("watchlistReminders", value)}
-            />
-            <SettingsRow
-              label={t("Export calendar")}
-              hint={t("Share upcoming episodes of shows you follow as an .ics file.")}
-            />
-            <ExportCalendarButton />
           </SettingsSection>
 
           <SettingsSection title={t("Privacy")} icon="lock-closed-outline">
@@ -315,11 +238,166 @@ export default function SettingsScreen() {
               />
             ) : null}
           </SettingsSection>
+          </SettingsGroup>
+
+          <SettingsGroup title={t("Playback")}>
+          <SettingsSection title={t("Where to watch")} icon="tv-outline">
+            <SettingsRow
+              label={t("Region")}
+              hint={t("Legal streaming, rent and buy offers from TMDB for this country.")}
+            />
+            <View style={styles.pillRow}>
+              {WATCH_REGIONS.map((option) => (
+                <GenrePill
+                  key={option.code}
+                  label={option.code}
+                  selected={watchRegion === option.code}
+                  onPress={() => setWatchRegion(option.code)}
+                />
+              ))}
+            </View>
+          </SettingsSection>
+
+          <SettingsSection title={t("Addons")} icon="rocket-outline">
+            <SettingsRow
+              label={t("Streaming sources")}
+              hint={t(
+                "Manage Torrentio, Comet, Meteor and automatic best-source playback.",
+              )}
+            />
+            <Button
+              label={t("Open Addons")}
+              icon="chevron-forward"
+              variant="secondary"
+              size="sm"
+              onPress={() => router.push("/addons")}
+            />
+          </SettingsSection>
+
+          </SettingsGroup>
+
+          <SettingsGroup title={t("Integrations")}>
+          <SettingsSection title={t("Integrations")} icon="server-outline">
+            <SettingsRow
+              label={t("Sonarr, Radarr and Trakt")}
+              hint={t(
+                "Connect your own servers. API keys stay in the device keystore. CineLog does not add indexers, download clients, or unlicensed sources.",
+              )}
+            />
+            <Button label="Sonarr" icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/sonarr" as never)} />
+            <Button label="Radarr" icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/radarr" as never)} />
+            <Button label="Trakt" icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/trakt" as never)} />
+            <Button label="SIMKL" icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/simkl" as never)} />
+            <Button label={t("Jellyfin or Emby")} icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/jellyfin" as never)} />
+            <Button label={t("Seerr or Overseerr")} icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/seerr" as never)} />
+            <Button label="Tautulli" icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/tautulli" as never)} />
+            <Button label={t("Kodi remote")} icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/kodi" as never)} />
+          </SettingsSection>
+          </SettingsGroup>
+
+          <SettingsGroup title={t("Live TV and IPTV")}>
+          <SettingsSection title={t("Live TV")} icon="radio-outline">
+            <SettingsRow
+              label={t("Live TV")}
+              hint={t(
+                "Official free channels from France 24, DW and Al Jazeera. NASA+ and NHK WORLD-JAPAN open their official pages.",
+              )}
+            />
+            <Button
+              label={t("Live TV")}
+              icon="chevron-forward"
+              variant="secondary"
+              size="sm"
+              onPress={() => router.push("/live" as never)}
+            />
+          </SettingsSection>
+          <SettingsSection title="IPTV" icon="list-outline">
+            <SettingsRow
+              label="IPTV"
+              hint={t(
+                "CineLog does not include any playlist. Add your own M3U URL, M3U file, or Xtream login.",
+              )}
+            />
+            <Button
+              label="IPTV"
+              icon="chevron-forward"
+              variant="secondary"
+              size="sm"
+              onPress={() => router.push("/iptv" as never)}
+            />
+          </SettingsSection>
+          </SettingsGroup>
+
+          <SettingsGroup title={t("Notifications")}>
+          <SettingsSection
+            title={t("Notifications")}
+            icon="notifications-outline"
+          >
+            <ToggleRow
+              label={t("New releases")}
+              hint={t("Tell me when something I follow lands")}
+              value={notifications.newReleases}
+              onChange={(value) => setNotification("newReleases", value)}
+            />
+            <ToggleRow
+              label={t("New episodes")}
+              hint={t("Remind me when a show I follow airs a new episode")}
+              value={notifications.newEpisodes !== false}
+              onChange={(value) => setNotification("newEpisodes", value)}
+            />
+            <ToggleRow
+              label={t("Recommendations")}
+              hint={t("Weekly picks based on what I watch")}
+              value={notifications.recommendations}
+              onChange={(value) => setNotification("recommendations", value)}
+            />
+            <ToggleRow
+              label={t("Watchlist reminders")}
+              hint={t("Nudge me about titles I saved but haven't watched")}
+              value={notifications.watchlistReminders}
+              onChange={(value) => setNotification("watchlistReminders", value)}
+            />
+            <SettingsRow
+              label={t("Export calendar")}
+              hint={t("Share upcoming episodes of shows you follow as an .ics file.")}
+            />
+            <ExportCalendarButton />
+          </SettingsSection>
+          </SettingsGroup>
+
+          <SettingsGroup title={t("About")}>
+          <SettingsSection title={t("About")} icon="information-circle-outline">
+            <SettingsRow
+              label="CineLog"
+              hint={t("Version {{version}}", {
+                version: Constants.expoConfig?.version ?? "1.0.35",
+              })}
+            />
+          </SettingsSection>
+          </SettingsGroup>
         </View>
 
         <Footer />
       </Screen>
     </>
+  );
+}
+
+function SettingsGroup({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  const styles = useStyles();
+  return (
+    <View style={styles.group}>
+      <Text style={styles.groupTitle} accessibilityRole="header">
+        {title}
+      </Text>
+      {children}
+    </View>
   );
 }
 
@@ -410,6 +488,16 @@ const useStyles = makeStyles((c, t) => ({
   sections: {
     gap: SPACING.xl,
     maxWidth: 720,
+  },
+  group: {
+    gap: SPACING.lg,
+  },
+  groupTitle: {
+    fontFamily: FONTS.extrabold,
+    fontSize: 12,
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    color: c.textMuted,
   },
   section: {
     gap: SPACING.md,

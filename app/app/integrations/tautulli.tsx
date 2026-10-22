@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/Button";
 import { Screen } from "@/components/ui/Screen";
 import { useResponsive } from "@/hooks/useResponsive";
 import { useTheme } from "@/theme";
-import { tautulliActivity, tautulliHistory, tautulliStats, testTautulli, type TautulliRow } from "@/lib/tautulli/api";
+import { SafeAlert } from "@/lib/safeAlert";
+import { tautulliActivity, tautulliHistory, tautulliStats, tautulliStop, testTautulli, type TautulliRow } from "@/lib/tautulli/api";
 import { readSecret, SECRET, writeSecret } from "@/lib/secrets";
 import { useIntegrations } from "@/store/integrations-store";
 
@@ -78,7 +79,7 @@ export default function TautulliScreen() {
           Tautulli
         </Text>
         <Text style={styles.copy}>
-          {t("Read-only stats from your own Tautulli server. CineLog cannot stop a stream or change Plex.")}
+          {t("Stats from your own Tautulli server. Stopping a stream asks you to confirm.")}
         </Text>
         <Text style={styles.label}>{t("Server URL")}</Text>
         <TextInput
@@ -103,7 +104,37 @@ export default function TautulliScreen() {
         <Button label={t("Test connection")} onPress={() => void load()} loading={busy} disabled={!draftUrl.trim() || !apiKey.trim()} />
         {message ? <Text style={styles.message}>{message}</Text> : null}
         <Text style={styles.label}>{t("Now playing")}</Text>
-        <Rows rows={activity} empty={t("Nobody is watching.")} />
+        {activity.length ? (
+          activity.map((row) => (
+            <View key={row.id} style={styles.card}>
+              <Text style={styles.cardTitle}>{row.title}</Text>
+              {row.meta ? <Text style={styles.cardMeta}>{row.meta}</Text> : null}
+              <Button
+                label={t("Stop")}
+                size="sm"
+                variant="secondary"
+                onPress={() => {
+                  const who = row.meta.split(" · ")[0] || row.title;
+                  SafeAlert.confirm(
+                    t("Stop this stream?"),
+                    t("This ends playback for {{name}}.", { name: who }),
+                    t("Stop stream"),
+                    () => {
+                      void tautulliStop(draftUrl, apiKey, row.id)
+                        .then(() => setActivity((current) => current.filter((item) => item.id !== row.id)))
+                        .catch((cause: unknown) =>
+                          setMessage(cause instanceof Error ? cause.message : t("Could not reach the server")),
+                        );
+                    },
+                    { cancelText: t("Cancel") },
+                  );
+                }}
+              />
+            </View>
+          ))
+        ) : (
+          <Text style={styles.hint}>{t("Nobody is watching.")}</Text>
+        )}
         <Text style={styles.label}>{t("Home stats")}</Text>
         <Rows rows={stats} empty={t("Nothing here yet")} />
         <Text style={styles.label}>{t("Recent plays")}</Text>

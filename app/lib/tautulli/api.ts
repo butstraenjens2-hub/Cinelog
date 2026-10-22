@@ -60,6 +60,10 @@ export async function tautulliStats(baseUrl: string, apiKey: string): Promise<Ta
   return rows.slice(0, 12);
 }
 
+export async function tautulliStop(baseUrl: string, apiKey: string, sessionKey: string): Promise<void> {
+  await tautulli(baseUrl, apiKey, "terminate_session", { session_key: sessionKey });
+}
+
 export async function tautulliHistory(baseUrl: string, apiKey: string): Promise<TautulliRow[]> {
   const data = await tautulli<Record<string, unknown>>(baseUrl, apiKey, "get_history", { length: 20 });
   const records = Array.isArray(data.data) ? data.data : [];

@@ -16,7 +16,7 @@ export interface JellyfinItem {
 
 function authHeaders(token: string): Record<string, string> {
   return {
-    "X-Emby-Authorization": mediaBrowserAuthHeader("1.0.34"),
+    "X-Emby-Authorization": mediaBrowserAuthHeader("1.0.35"),
     ...(token ? { "X-Emby-Token": token } : {}),
   };
 }
@@ -144,6 +144,55 @@ export function jellyfinImageUrl(baseUrl: string, itemId: string): string {
 
 export function jellyfinAuthHeaders(token: string): Record<string, string> {
   return authHeaders(token);
+}
+
+export interface JellyfinResume extends JellyfinItem {
+  positionSeconds: number;
+}
+
+export async function jellyfinResume(
+  baseUrl: string,
+  token: string,
+  userId: string,
+): Promise<JellyfinResume[]> {
+  const page = await ownFetch<Record<string, unknown>>(baseUrl, `/Users/${encodeURIComponent(userId)}/Items/Resume`, {
+    headers: authHeaders(token),
+    query: { Limit: 12, Fields: "MediaSources,UserData", MediaTypes: "Video" },
+  });
+  const rows = Array.isArray(page.Items) ? page.Items : [];
+  return rows.map((row) => {
+    const raw = asRecord(row);
+    const sources = Array.isArray(raw.MediaSources) ? raw.MediaSources : [];
+    const userData = asRecord(raw.UserData);
+    const ticks = asNumber(userData.PlaybackPositionTicks);
+    return {
+      id: asText(raw.Id),
+      name: asText(raw.Name) || "Untitled",
+      kind: asText(raw.Type) || "Video",
+      year: asNumber(raw.ProductionYear),
+      mediaSourceId: asText(asRecord(sources[0]).Id),
+      positionSeconds: ticks > 0 ? Math.floor(ticks / 10_000_000) : 0,
+    };
+  }).filter((item) => item.id);
+}
+
+export async function jellyfinReportProgress(
+  baseUrl: string,
+  token: string,
+  itemId: string,
+  positionSeconds: number,
+  paused = false,
+): Promise<void> {
+  await ownFetch(baseUrl, "/Sessions/Playing/Progress", {
+    method: "POST",
+    headers: authHeaders(token),
+    body: {
+      ItemId: itemId,
+      PositionTicks: Math.max(0, Math.round(positionSeconds * 10_000_000)),
+      IsPaused: paused,
+      EventName: paused ? "Pause" : "TimeUpdate",
+    },
+  });
 }
 
 export function jellyfinStreamUrl(baseUrl: string, item: JellyfinItem): string {

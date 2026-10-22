@@ -41,6 +41,7 @@ export function useNotificationSync(): void {
       title: item.title,
       subtitle: item.year ? String(item.year) : "",
       path: item.type === "movie" ? `/movie/${item.tmdbId}` : `/series/${item.tmdbId}`,
+      poster: item.poster,
     }));
     const next = upcoming[0];
     const saved = watchlist[0];
@@ -49,6 +50,7 @@ export function useNotificationSync(): void {
         title: next.series.title,
         subtitle: `${episodeCode(next.seasonNumber, next.episodeNumber)} · ${next.airDate}`,
         path: `/series/${next.series.tmdbId}`,
+        poster: next.series.poster,
         items,
       });
       return;
@@ -58,6 +60,7 @@ export function useNotificationSync(): void {
         title: saved.title,
         subtitle: "On your watchlist",
         path: saved.type === "movie" ? `/movie/${saved.tmdbId}` : `/series/${saved.tmdbId}`,
+        poster: saved.poster,
         items,
       });
       return;

@@ -11,11 +11,18 @@ class CineLogWidgetModule(
 
   @ReactMethod
   fun setSnapshot(json: String) {
-    reactContext
-      .getSharedPreferences(CineLogWidgetProvider.PREFS, android.content.Context.MODE_PRIVATE)
-      .edit()
-      .putString(CineLogWidgetProvider.KEY, json)
-      .apply()
-    CineLogWidgetProvider.requestUpdate(reactContext)
+    Thread {
+      val stored = try {
+        WidgetSnapshotStore.enrich(reactContext, json)
+      } catch (_: Exception) {
+        json
+      }
+      reactContext
+        .getSharedPreferences(CineLogWidgetProvider.PREFS, android.content.Context.MODE_PRIVATE)
+        .edit()
+        .putString(CineLogWidgetProvider.KEY, stored)
+        .apply()
+      CineLogWidgetProvider.requestUpdate(reactContext)
+    }.start()
   }
 }

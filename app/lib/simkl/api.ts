@@ -7,7 +7,7 @@ import { asRecord, asText, ownFetch } from "@/lib/own-server/http";
 import { simklTitle } from "@/lib/simkl/map.mjs";
 
 const APP = "CineLog";
-const VERSION = "1.0.34";
+const VERSION = "1.0.35";
 
 export interface SimklDevice {
   deviceCode: string;
@@ -97,6 +97,7 @@ export interface SimklLibraryItem {
   year: number | null;
   status: string;
   type: "movie" | "series";
+  rating: number;
   episodes: Array<{ season: number; episode: number }>;
 }
 
@@ -120,12 +121,15 @@ function readRows(payload: unknown, type: "movie" | "series", key: string): Simk
   if (!Array.isArray(list)) return [];
   return list.map((row) => {
     const parsed = simklTitle(row);
+    const raw = row && typeof row === "object" ? (row as Record<string, unknown>) : {};
+    const nested = asRecord(raw.movie ?? raw.show);
     return {
       tmdbId: parsed.tmdbId,
       title: parsed.title,
       year: parsed.year,
       status: parsed.status,
       type,
+      rating: Number(raw.user_rating ?? nested.user_rating ?? raw.rating) || 0,
       episodes: episodePairs(parsed.seasons),
     };
   });
@@ -180,6 +184,23 @@ export async function pushSimklHistory(
         ids: { tmdb: show.tmdbId },
         seasons: groupEpisodes(show.episodes),
       })),
+    },
+  });
+}
+
+export async function pushSimklRatings(
+  clientId: string,
+  accessToken: string,
+  movies: Array<{ tmdbId: number; rating: number }>,
+  shows: Array<{ tmdbId: number; rating: number }>,
+): Promise<void> {
+  await ownFetch("https://api.simkl.com", "/sync/ratings", {
+    method: "POST",
+    headers: authHeaders(clientId, accessToken),
+    query: query(clientId),
+    body: {
+      movies: movies.map((item) => ({ rating: item.rating, ids: { tmdb: item.tmdbId } })),
+      shows: shows.map((item) => ({ rating: item.rating, ids: { tmdb: item.tmdbId } })),
     },
   });
 }

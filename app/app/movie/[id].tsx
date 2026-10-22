@@ -187,7 +187,7 @@ export default function MovieDetailScreen() {
 
           <View style={{ paddingHorizontal: gutter, gap: 8 }}>
             <AddToServarrButton kind="radarr" tmdbId={movie.tmdbId} title={movie.title} />
-            <RequestOnSeerrButton mediaType="movie" tmdbId={movie.tmdbId} />
+            <RequestOnSeerrButton mediaType="movie" tmdbId={movie.tmdbId} title={movie.title} />
           </View>
 
           {movie.collection ? (

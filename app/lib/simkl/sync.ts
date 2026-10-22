@@ -4,7 +4,13 @@
  */
 
 import type { LibraryEntryRef } from "@/lib/cinelog/types";
-import { fetchSimklLibrary, pushSimklHistory, pushSimklWatchlist, type SimklLibraryItem } from "@/lib/simkl/api";
+import {
+  fetchSimklLibrary,
+  pushSimklHistory,
+  pushSimklRatings,
+  pushSimklWatchlist,
+  type SimklLibraryItem,
+} from "@/lib/simkl/api";
 import { simklBucket } from "@/lib/simkl/map.mjs";
 import { readSecret, SECRET, writeSecret } from "@/lib/secrets";
 import { refreshSimkl } from "@/lib/simkl/api";
@@ -56,6 +62,9 @@ export async function pullSimklLibrary(): Promise<{ watchlist: number; progress:
     const ref = refFor(item.type, item);
     if (!bucket || !ref) continue;
     const library = useLibrary.getState();
+    if (item.rating >= 1 && item.rating <= 10 && !library.getRating(ref.id)) {
+      library.rate(ref, item.rating);
+    }
     if (bucket === "watchlist") {
       if (library.isInWatchlist(ref.id)) continue;
       library.toggleWatchlist(ref);
@@ -75,14 +84,30 @@ export async function pullSimklLibrary(): Promise<{ watchlist: number; progress:
         useLibrary.getState().toggleEpisodeWatched(ref, episode.season, episode.episode);
         progress += 1;
       }
+    }
+    if (item.status === "watching" && library.getWatchState(ref.id) !== "watched") {
+      library.setWatchState(ref, "watching");
+      if (!useLibrary.getState().isInWatchlist(ref.id)) useLibrary.getState().toggleWatchlist(ref);
+      progress += 1;
       continue;
     }
-    if (item.status === "completed" && library.getWatchState(ref.id) !== "watched") {
+    if (item.status === "completed" && !item.episodes.length && library.getWatchState(ref.id) !== "watched") {
       library.setWatchState(ref, "watched");
       progress += 1;
     }
   }
   return { watchlist, progress };
+}
+
+export async function pushSimklRatingsFromDevice(): Promise<void> {
+  const { clientId, token } = await simklAccessToken();
+  const ratings = Object.values(useLibrary.getState().ratings);
+  await pushSimklRatings(
+    clientId,
+    token,
+    ratings.filter((item) => item.type === "movie").map((item) => ({ tmdbId: item.tmdbId, rating: item.score })),
+    ratings.filter((item) => item.type === "series").map((item) => ({ tmdbId: item.tmdbId, rating: item.score })),
+  );
 }
 
 export async function pushSimklWatchlistFromDevice(): Promise<void> {

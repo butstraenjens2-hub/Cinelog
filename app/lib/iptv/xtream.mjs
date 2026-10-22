@@ -4,12 +4,33 @@
  * playback or a catalogue request needs them.
  */
 
-function originOf(server) {
+function parsedServer(server) {
   const url = new URL(String(server ?? "").trim());
   if (url.protocol !== "http:" && url.protocol !== "https:") {
     throw new Error("Only http and https URLs are supported.");
   }
-  return url.origin;
+  return url;
+}
+
+function originOf(server) {
+  return parsedServer(server).origin;
+}
+
+/** player_api.php on the viewer's server, keeping a directory they typed. */
+function playerApiUrl(server) {
+  const url = parsedServer(server);
+  const path = url.pathname || "/";
+  let next = path;
+  if (/player_api\.php$/i.test(path)) {
+    next = path;
+  } else if (/\.php$/i.test(path)) {
+    next = path.replace(/[^/]*$/, "player_api.php");
+  } else if (path.endsWith("/")) {
+    next = `${path}player_api.php`;
+  } else {
+    next = `${path}/player_api.php`;
+  }
+  return new URL(next, `${url.origin}/`);
 }
 
 function pathPart(value) {
@@ -17,7 +38,7 @@ function pathPart(value) {
 }
 
 export function xtreamApiUrl(server, username, password, action, query = {}) {
-  const url = new URL("/player_api.php", originOf(server));
+  const url = playerApiUrl(server);
   url.searchParams.set("username", username);
   url.searchParams.set("password", password);
   if (action) url.searchParams.set("action", action);

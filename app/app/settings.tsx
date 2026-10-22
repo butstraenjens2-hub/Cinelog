@@ -1,5 +1,5 @@
 import React from "react";
-import { Platform, StatusBar, Switch, Text, View } from "react-native";
+import { Platform, StatusBar, Switch, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import { router } from "expo-router";
@@ -17,7 +17,9 @@ import { makeStyles, useTheme } from "@/theme";
 import { useResponsive } from "@/hooks/useResponsive";
 import { ExportCalendarButton } from "@/components/integrations/ExportCalendarButton";
 import { SafeAlert } from "@/lib/safeAlert";
+import { DEFAULT_IPTV_USER_AGENT } from "@/lib/iptv/http.mjs";
 import { useAuth } from "@/store/auth-store";
+import { useIptv } from "@/store/iptv-store";
 import { useLibrary } from "@/store/library-store";
 import {
   LANGUAGES,
@@ -36,6 +38,7 @@ const THEMES: { value: ThemeMode; label: string }[] = [
 export default function SettingsScreen() {
   const t = useT();
   const styles = useStyles();
+  const { colors } = useTheme();
   const { gutter } = useResponsive();
   const insets = useSafeAreaInsets();
   const statusBarHeight = insets.top > 0 ? insets.top : (Platform.OS === "android" ? (StatusBar.currentHeight ?? 24) : 0);
@@ -57,6 +60,8 @@ export default function SettingsScreen() {
 
   const clearHistory = useLibrary((state) => state.clearHistory);
   const resetLibrary = useLibrary((state) => state.resetLibrary);
+  const iptvUserAgent = useIptv((state) => state.userAgent);
+  const setIptvUserAgent = useIptv((state) => state.setUserAgent);
 
   return (
     <>
@@ -325,6 +330,19 @@ export default function SettingsScreen() {
               size="sm"
               onPress={() => router.push("/iptv" as never)}
             />
+            <SettingsRow
+              label={t("User agent")}
+              hint={t("Playlist requests use this player name. Many servers refuse a browser name.")}
+            />
+            <TextInput
+              value={iptvUserAgent || DEFAULT_IPTV_USER_AGENT}
+              onChangeText={setIptvUserAgent}
+              autoCapitalize="none"
+              autoCorrect={false}
+              placeholder={DEFAULT_IPTV_USER_AGENT}
+              placeholderTextColor={colors.textMuted}
+              style={styles.input}
+            />
           </SettingsSection>
           </SettingsGroup>
 
@@ -370,7 +388,7 @@ export default function SettingsScreen() {
             <SettingsRow
               label="CineLog"
               hint={t("Version {{version}}", {
-                version: Constants.expoConfig?.version ?? "1.0.35",
+                version: Constants.expoConfig?.version ?? "1.0.36",
               })}
             />
           </SettingsSection>
@@ -540,6 +558,19 @@ const useStyles = makeStyles((c, t) => ({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: SPACING.sm,
+  },
+  input: {
+    alignSelf: "stretch",
+    width: "100%",
+    borderWidth: 1,
+    borderColor: c.border,
+    backgroundColor: c.background,
+    color: c.textPrimary,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    fontFamily: FONTS.regular,
+    fontSize: 14,
   },
   toggleRow: {
     flexDirection: "row",

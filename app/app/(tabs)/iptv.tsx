@@ -19,6 +19,7 @@ import { Screen } from "@/components/ui/Screen";
 import { FONTS, RADIUS, SPACING } from "@/constants/theme";
 import { makeStyles, useTheme } from "@/theme";
 import { useResponsive } from "@/hooks/useResponsive";
+import { DEFAULT_IPTV_USER_AGENT } from "@/lib/iptv/http.mjs";
 import {
   entriesFromM3u,
   loadGuide,
@@ -47,6 +48,9 @@ export default function IptvScreen() {
   const removeSource = useIptv((state) => state.removeSource);
   const favorites = useIptv((state) => state.favorites);
   const toggleFavorite = useIptv((state) => state.toggleFavorite);
+  const storedAgent = useIptv((state) => state.userAgent);
+  const setUserAgent = useIptv((state) => state.setUserAgent);
+  const userAgent = storedAgent?.trim() || DEFAULT_IPTV_USER_AGENT;
   const [sourceId, setSourceId] = useState<string | null>(null);
   const [section, setSection] = useState<Section>("live");
   const [group, setGroup] = useState("");
@@ -78,11 +82,11 @@ export default function IptvScreen() {
         const text = next.fileUri
           ? await FileSystem.readAsStringAsync(next.fileUri)
           : null;
-        setItems(text ? entriesFromM3u(text) : await loadM3uUrl(next.url));
+        setItems(text ? entriesFromM3u(text) : await loadM3uUrl(next.url, userAgent));
       } else {
         const password = await readSecret(iptvPasswordKey(next.id));
         if (!password) throw new Error(t("The saved Xtream password is missing. Add the playlist again."));
-        setItems(await loadXtreamCatalogue(next.server, next.username, password));
+        setItems(await loadXtreamCatalogue(next.server, next.username, password, userAgent));
       }
       setSourceId(next.id);
     } catch (cause) {
@@ -200,7 +204,7 @@ export default function IptvScreen() {
     } else if (source?.kind === "xtream") {
       const password = await readSecret(iptvPasswordKey(source.id));
       if (item.kind === "series") {
-        setEpisodes(await loadXtreamEpisodes(source.server, source.username, password, item.streamId));
+        setEpisodes(await loadXtreamEpisodes(source.server, source.username, password, item.streamId, userAgent));
         setPlaying(null);
         return;
       }
@@ -208,7 +212,7 @@ export default function IptvScreen() {
     }
     if (section === "live" && source?.xmltvUrl && item.tvgId) {
       try {
-        const parsed = await loadGuide(source.xmltvUrl);
+        const parsed = await loadGuide(source.xmltvUrl, userAgent);
         const now = Date.now();
         const current = parsed.programmes.find(
           (programme: { channelId: string; startMs: number; stopMs: number; title: string }) =>
@@ -255,6 +259,19 @@ export default function IptvScreen() {
           <Text style={styles.copy}>
             {t("CineLog does not include any playlist. Add your own M3U URL, M3U file, or Xtream login.")}
           </Text>
+          <Text style={styles.label}>{t("User agent")}</Text>
+          <Text style={styles.copy}>
+            {t("Playlist requests use this player name. Many servers refuse a browser name.")}
+          </Text>
+          <TextInput
+            value={storedAgent || DEFAULT_IPTV_USER_AGENT}
+            onChangeText={setUserAgent}
+            autoCapitalize="none"
+            autoCorrect={false}
+            placeholder={DEFAULT_IPTV_USER_AGENT}
+            placeholderTextColor={colors.textMuted}
+            style={styles.input}
+          />
           <View style={styles.row}>
             <Button label={t("Add M3U URL")} size="sm" variant="secondary" onPress={() => setForm("m3u")} />
             <Button label={t("Import M3U file")} size="sm" variant="secondary" onPress={() => void importFile()} />
@@ -359,7 +376,9 @@ export default function IptvScreen() {
             placeholderTextColor={colors.textMuted}
             style={styles.input}
           />
-          {playing ? <BroadcastPlayer key={playing} url={playing} /> : null}
+          {playing ? (
+            <BroadcastPlayer key={playing} url={playing} headers={{ "User-Agent": userAgent }} />
+          ) : null}
           {guide ? <Text style={styles.copy}>{t("Guide")}: {guide}</Text> : null}
           {busy ? <Text style={styles.copy}>{t("Loading")}</Text> : null}
           {message ? <Text style={styles.error}>{message}</Text> : null}

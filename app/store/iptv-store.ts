@@ -6,6 +6,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
+import { DEFAULT_IPTV_USER_AGENT } from "@/lib/iptv/http.mjs";
+
 export interface IptvSource {
   id: string;
   name: string;
@@ -20,10 +22,12 @@ export interface IptvSource {
 interface IptvState {
   sources: IptvSource[];
   favorites: string[];
+  userAgent: string;
   addSource: (source: IptvSource) => void;
   removeSource: (id: string) => void;
   toggleFavorite: (id: string) => void;
   isFavorite: (id: string) => boolean;
+  setUserAgent: (userAgent: string) => void;
 }
 
 export const useIptv = create<IptvState>()(
@@ -31,6 +35,7 @@ export const useIptv = create<IptvState>()(
     (set, get) => ({
       sources: [],
       favorites: [],
+      userAgent: DEFAULT_IPTV_USER_AGENT,
       addSource: (source) =>
         set({ sources: [source, ...get().sources.filter((item) => item.id !== source.id)] }),
       removeSource: (id) =>
@@ -45,10 +50,19 @@ export const useIptv = create<IptvState>()(
             : [id, ...get().favorites],
         }),
       isFavorite: (id) => get().favorites.includes(id),
+      setUserAgent: (userAgent) => set({ userAgent: userAgent.slice(0, 240) }),
     }),
     {
       name: "cinelog.iptv.v1",
       storage: createJSONStorage(() => AsyncStorage),
+      merge: (persisted, current) => {
+        const saved = (persisted ?? {}) as Partial<IptvState>;
+        return {
+          ...current,
+          ...saved,
+          userAgent: saved.userAgent?.trim() || current.userAgent,
+        };
+      },
     },
   ),
 );

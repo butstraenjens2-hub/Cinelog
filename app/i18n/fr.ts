@@ -609,4 +609,7 @@ export const FR: Record<string, string> = {
   "Enter a valid http or https URL.": "Saisissez une URL http ou https valide.",
   "The saved Xtream password is missing. Add the playlist again.":
     "Le mot de passe Xtream enregistré est absent. Ajoutez à nouveau la liste.",
+  "User agent": "Agent utilisateur",
+  "Playlist requests use this player name. Many servers refuse a browser name.":
+    "Les requêtes de liste utilisent ce nom de lecteur. Beaucoup de serveurs refusent un nom de navigateur.",
 };

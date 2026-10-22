@@ -3,6 +3,7 @@
  */
 
 import { parseXmltv } from "@/lib/live/xmltv.mjs";
+import { fetchPlaylist } from "@/lib/iptv/http.mjs";
 import { parseM3u } from "@/lib/iptv/m3u.mjs";
 import {
   formatCatchupStart,
@@ -14,9 +15,6 @@ import {
   xtreamLiveUrl,
   xtreamVodUrl,
 } from "@/lib/iptv/xtream.mjs";
-
-const USER_AGENT =
-  "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36";
 
 export interface IptvEntry {
   id: string;
@@ -32,16 +30,12 @@ export interface IptvEntry {
   extension: string;
 }
 
-async function fetchText(url: string): Promise<string> {
-  const response = await fetch(url, {
-    headers: { "User-Agent": USER_AGENT, Accept: "*/*" },
-  });
-  if (!response.ok) throw new Error(`Server returned ${response.status}.`);
-  return response.text();
+async function fetchText(url: string, userAgent?: string): Promise<string> {
+  return fetchPlaylist(url, { userAgent });
 }
 
-async function fetchJson(url: string): Promise<unknown> {
-  const text = await fetchText(url);
+async function fetchJson(url: string, userAgent?: string): Promise<unknown> {
+  const text = await fetchText(url, userAgent);
   return JSON.parse(text) as unknown;
 }
 
@@ -61,22 +55,23 @@ export function entriesFromM3u(text: string): IptvEntry[] {
   }));
 }
 
-export async function loadM3uUrl(url: string): Promise<IptvEntry[]> {
-  return entriesFromM3u(await fetchText(url));
+export async function loadM3uUrl(url: string, userAgent?: string): Promise<IptvEntry[]> {
+  return entriesFromM3u(await fetchText(url, userAgent));
 }
 
 export async function loadXtreamCatalogue(
   server: string,
   username: string,
   password: string,
+  userAgent?: string,
 ): Promise<IptvEntry[]> {
   const [liveCats, live, vodCats, vod, seriesCats, series] = await Promise.all([
-    fetchJson(xtreamApiUrl(server, username, password, "get_live_categories")),
-    fetchJson(xtreamApiUrl(server, username, password, "get_live_streams")),
-    fetchJson(xtreamApiUrl(server, username, password, "get_vod_categories")),
-    fetchJson(xtreamApiUrl(server, username, password, "get_vod_streams")),
-    fetchJson(xtreamApiUrl(server, username, password, "get_series_categories")),
-    fetchJson(xtreamApiUrl(server, username, password, "get_series")),
+    fetchJson(xtreamApiUrl(server, username, password, "get_live_categories"), userAgent),
+    fetchJson(xtreamApiUrl(server, username, password, "get_live_streams"), userAgent),
+    fetchJson(xtreamApiUrl(server, username, password, "get_vod_categories"), userAgent),
+    fetchJson(xtreamApiUrl(server, username, password, "get_vod_streams"), userAgent),
+    fetchJson(xtreamApiUrl(server, username, password, "get_series_categories"), userAgent),
+    fetchJson(xtreamApiUrl(server, username, password, "get_series"), userAgent),
   ]);
   const names = new Map<string, string>();
   for (const category of [
@@ -140,9 +135,11 @@ export async function loadXtreamEpisodes(
   username: string,
   password: string,
   seriesId: number,
+  userAgent?: string,
 ): Promise<IptvEpisode[]> {
   const info = (await fetchJson(
     xtreamApiUrl(server, username, password, "get_series_info", { series_id: seriesId }),
+    userAgent,
   )) as { episodes?: Record<string, Array<Record<string, unknown>>> };
   const episodes = info?.episodes && typeof info.episodes === "object" ? info.episodes : {};
   const rows: IptvEpisode[] = [];
@@ -163,7 +160,7 @@ export async function loadXtreamEpisodes(
   return rows;
 }
 
-export async function loadGuide(url: string) {
-  const text = await fetchText(url);
+export async function loadGuide(url: string, userAgent?: string) {
+  const text = await fetchText(url, userAgent);
   return parseXmltv(text.slice(0, 2_000_000));
 }

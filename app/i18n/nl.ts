@@ -607,4 +607,7 @@ export const NL: Record<string, string> = {
   "Enter a valid http or https URL.": "Voer een geldige http- of https-URL in.",
   "The saved Xtream password is missing. Add the playlist again.":
     "Het opgeslagen Xtream-wachtwoord ontbreekt. Voeg de afspeellijst opnieuw toe.",
+  "User agent": "User-agent",
+  "Playlist requests use this player name. Many servers refuse a browser name.":
+    "Afspeellijstverzoeken gebruiken deze spelernaam. Veel servers weigeren een browsernaam.",
 };

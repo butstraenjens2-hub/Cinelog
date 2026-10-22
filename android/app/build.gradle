@@ -193,6 +193,13 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
+    // Media3 is Apache-2.0. The same 1.8.0 line is already used by expo-video.
+    // IPTV playback uses it directly so MPEG-TS, HLS, MP4 and MKV share one header client.
+    implementation("androidx.media3:media3-exoplayer:1.8.0")
+    implementation("androidx.media3:media3-exoplayer-hls:1.8.0")
+    implementation("androidx.media3:media3-ui:1.8.0")
+    implementation("androidx.media3:media3-datasource-okhttp:1.8.0")
+    implementation("com.squareup.okhttp3:okhttp:4.9.2")
     // Installs the checked-in baseline profile so ART can speed up startup.
     implementation("androidx.profileinstaller:profileinstaller:1.4.1")
 

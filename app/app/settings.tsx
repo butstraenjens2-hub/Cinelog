@@ -64,6 +64,8 @@ export default function SettingsScreen() {
   const setIptvUserAgent = useIptv((state) => state.setUserAgent);
   const iptvPreset = useIptv((state) => state.userAgentPreset);
   const setIptvPreset = useIptv((state) => state.setUserAgentPreset);
+  const iptvPlayer = useIptv((state) => state.player);
+  const setIptvPlayer = useIptv((state) => state.setPlayer);
   const resolvedAgent = resolveUserAgent(iptvPreset, iptvUserAgent);
 
   return (
@@ -360,6 +362,14 @@ export default function SettingsScreen() {
             ) : (
               <Text style={styles.rowHint}>{resolvedAgent}</Text>
             )}
+            <SettingsRow
+              label={t("Player")}
+              hint={t("Media3 plays MPEG-TS, HLS, MP4 and MKV with the playlist headers.")}
+            />
+            <View style={styles.pillRow}>
+              <GenrePill label="Media3" selected={iptvPlayer !== "expo"} onPress={() => setIptvPlayer("media3")} />
+              <GenrePill label="Expo player" selected={iptvPlayer === "expo"} onPress={() => setIptvPlayer("expo")} />
+            </View>
           </SettingsSection>
           </SettingsGroup>
 
@@ -405,7 +415,7 @@ export default function SettingsScreen() {
             <SettingsRow
               label="CineLog"
               hint={t("Version {{version}}", {
-                version: Constants.expoConfig?.version ?? "1.0.38",
+                version: Constants.expoConfig?.version ?? "1.0.39",
               })}
             />
           </SettingsSection>

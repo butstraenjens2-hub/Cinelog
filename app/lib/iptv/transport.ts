@@ -1,0 +1,187 @@
+/**
+ * Playlist transport. On Android the native client streams the body to a file
+ * and does not ask OkHttp for gzip. Elsewhere the JS fetch path is used.
+ * Reports never include the request URL.
+ */
+
+import { NativeModules, Platform } from "react-native";
+
+import { diagnoseM3u, diagnoseXtream, swapScheme } from "@/lib/iptv/diagnose.mjs";
+import {
+  effectiveUserAgent,
+  exchangePlaylist,
+  formatExchangeReport,
+  formatStepError,
+} from "@/lib/iptv/http.mjs";
+import type { IptvEntry } from "@/lib/iptv/load";
+import { xtreamApiUrl } from "@/lib/iptv/xtream.mjs";
+
+type NativeExchange = {
+  ok?: boolean;
+  status?: number;
+  message?: string;
+  path?: string;
+  preview?: string;
+  scheme?: string;
+  requestHeaders?: Record<string, string>;
+  responseHeaders?: Record<string, string>;
+};
+
+type NativeRow = {
+  id?: string;
+  name?: string;
+  group?: string;
+  tvgId?: string;
+  logo?: string;
+  url?: string;
+  kind?: string;
+};
+
+type IptvNative = {
+  exchange: (url: string, userAgent: string) => Promise<NativeExchange>;
+  readText: (path: string) => Promise<string>;
+  parseM3u: (path: string) => Promise<NativeRow[]>;
+};
+
+function nativeModule(): IptvNative | null {
+  const candidate = NativeModules.IptvHttp as IptvNative | undefined;
+  if (Platform.OS !== "android" || !candidate?.exchange) return null;
+  return candidate;
+}
+
+function asEntry(row: NativeRow): IptvEntry | null {
+  const url = String(row.url || "");
+  if (!url) return null;
+  const kind = row.kind === "movie" || row.kind === "series" ? row.kind : "live";
+  return {
+    id: String(row.id || url),
+    name: String(row.name || "Channel"),
+    group: String(row.group || ""),
+    groupName: String(row.group || ""),
+    tvgId: String(row.tvgId || ""),
+    logo: String(row.logo || ""),
+    url,
+    kind,
+    archiveHours: 0,
+    streamId: 0,
+    extension: "",
+  };
+}
+
+async function nativeExchange(url: string, userAgent: string | undefined, step: string) {
+  const native = nativeModule();
+  if (!native) return null;
+  const result = await native.exchange(url, effectiveUserAgent(userAgent));
+  const exchange = {
+    ok: Boolean(result.ok),
+    status: Number(result.status || 0),
+    body: String(result.preview || ""),
+    requestHeaders: result.requestHeaders || {},
+    responseHeaders: result.responseHeaders || {},
+    scheme: String(result.scheme || ""),
+  };
+  if (!result.ok) {
+    const error = new Error(formatStepError(step, exchange.status, result.message || ""));
+    (error as Error & { exchange?: typeof exchange }).exchange = exchange;
+    throw error;
+  }
+  return { exchange, path: String(result.path || ""), native };
+}
+
+export async function readStep(url: string, userAgent: string | undefined, step: string): Promise<string> {
+  const hit = await nativeExchange(url, userAgent, step);
+  if (!hit) return exchangePlaylist(url, { userAgent, step }).then((exchange) => exchange.body);
+  if (!hit.path) return hit.exchange.body;
+  return hit.native.readText(hit.path);
+}
+
+export async function readM3uEntries(url: string, userAgent: string | undefined): Promise<IptvEntry[] | null> {
+  const hit = await nativeExchange(url, userAgent, "Playlist");
+  if (!hit) return null;
+  const rows = hit.path ? await hit.native.parseM3u(hit.path) : [];
+  return rows.flatMap((row) => {
+    const entry = asEntry(row);
+    return entry ? [entry] : [];
+  });
+}
+
+function failureLines(error: unknown): string[] {
+  const message = error instanceof Error ? error.message : "The request failed.";
+  const exchange = (error as { exchange?: Parameters<typeof formatExchangeReport>[0] })?.exchange;
+  return exchange ? [message, ...formatExchangeReport(exchange)] : [message];
+}
+
+export async function reportM3u(url: string, userAgent?: string): Promise<string[]> {
+  if (!nativeModule()) return diagnoseM3u({ url, userAgent });
+  try {
+    const hit = await nativeExchange(url, userAgent, "Playlist");
+    if (!hit) return diagnoseM3u({ url, userAgent });
+    const preview = hit.exchange.body;
+    const line = preview.includes("#EXTM3U") ? "Playlist: OK" : "Playlist: OK, but the file is not an M3U playlist.";
+    return [`User agent: ${effectiveUserAgent(userAgent)}`, line, ...formatExchangeReport(hit.exchange)];
+  } catch (error) {
+    const lines = [`User agent: ${effectiveUserAgent(userAgent)}`, ...failureLines(error)];
+    const alt = swapScheme(url);
+    if (!alt) return lines;
+    const label = alt.startsWith("https:") ? "https" : "http";
+    try {
+      const retry = await nativeExchange(alt, userAgent, "Playlist");
+      if (retry) lines.push(`Playlist over ${label}: OK. Save the playlist with that address.`, ...formatExchangeReport(retry.exchange));
+    } catch (altError) {
+      const message = altError instanceof Error ? altError.message : "failed";
+      lines.push(message.replace(/^Playlist/, `Playlist over ${label}`));
+    }
+    return lines;
+  }
+}
+
+export async function reportXtream(input: {
+  server: string;
+  username: string;
+  password: string;
+  userAgent?: string;
+}): Promise<string[]> {
+  if (!nativeModule()) return diagnoseXtream(input);
+  const agent = effectiveUserAgent(input.userAgent);
+  const lines = [`User agent: ${agent}`];
+  try {
+    const hit = await nativeExchange(
+      xtreamApiUrl(input.server, input.username, input.password, ""),
+      agent,
+      "Sign in",
+    );
+    if (!hit) return diagnoseXtream(input);
+    lines.push("Sign in: OK", ...formatExchangeReport(hit.exchange));
+  } catch (error) {
+    lines.push(...failureLines(error));
+    const alt = swapScheme(input.server);
+    if (alt) {
+      const label = alt.startsWith("https:") ? "https" : "http";
+      try {
+        const retry = await nativeExchange(
+          xtreamApiUrl(alt, input.username, input.password, ""),
+          agent,
+          "Sign in",
+        );
+        if (retry) {
+          lines.push(`Sign in over ${label}: OK. Save the server with that address.`, ...formatExchangeReport(retry.exchange));
+        }
+      } catch (altError) {
+        const message = altError instanceof Error ? altError.message : "failed";
+        lines.push(message.replace(/^Sign in/, `Sign in over ${label}`));
+      }
+    }
+    return lines;
+  }
+  try {
+    const hit = await nativeExchange(
+      xtreamApiUrl(input.server, input.username, input.password, "get_live_categories"),
+      agent,
+      "Live categories",
+    );
+    if (hit) lines.push("Live categories: OK", ...formatExchangeReport(hit.exchange));
+  } catch (error) {
+    lines.push(...failureLines(error));
+  }
+  return lines;
+}

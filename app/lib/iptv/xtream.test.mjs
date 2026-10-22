@@ -12,7 +12,8 @@ import {
 
 test("xtream urls stay on the viewer's server and encode the password", () => {
   const live = xtreamLiveUrl("http://example.com:8080/", "ada", "p@ss", 15);
-  assert.equal(live, "http://example.com:8080/live/ada/p%40ss/15.m3u8");
+  assert.equal(live, "http://example.com:8080/live/ada/p%40ss/15.ts");
+  assert.equal(xtreamLiveUrl("http://example.com:8080/", "ada", "p@ss", 15, "m3u8"), "http://example.com:8080/live/ada/p%40ss/15.m3u8");
   const api = new URL(xtreamApiUrl("https://example.com", "ada", "secret", "get_live_streams"));
   assert.equal(api.origin, "https://example.com");
   assert.equal(api.pathname, "/player_api.php");

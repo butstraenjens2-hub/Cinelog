@@ -49,8 +49,9 @@ export function xtreamApiUrl(server, username, password, action, query = {}) {
   return url.toString();
 }
 
-export function xtreamLiveUrl(server, username, password, streamId) {
-  return `${originOf(server)}/live/${pathPart(username)}/${pathPart(password)}/${pathPart(streamId)}.m3u8`;
+export function xtreamLiveUrl(server, username, password, streamId, extension = "ts") {
+  const ext = String(extension || "ts").replace(/^\./, "") || "ts";
+  return `${originOf(server)}/live/${pathPart(username)}/${pathPart(password)}/${pathPart(streamId)}.${ext}`;
 }
 
 export function xtreamVodUrl(server, username, password, streamId, extension = "mp4") {
@@ -98,7 +99,7 @@ export function mapXtreamStreams(rows, kind) {
         tvgId: String(row?.epg_channel_id ?? ""),
         logo: String(row?.stream_icon ?? row?.cover ?? ""),
         streamId: Number(row?.stream_id ?? row?.series_id) || 0,
-        extension: String(row?.container_extension ?? (kind === "live" ? "m3u8" : "mp4")),
+        extension: String(row?.container_extension ?? (kind === "live" ? "ts" : "mp4")),
         archiveHours: archive ? Number(row?.tv_archive_duration) || 0 : 0,
         kind,
       };

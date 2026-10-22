@@ -621,4 +621,9 @@ export const FR: Record<string, string> = {
   "Add a playlist URL or Xtream login first.":
     "Ajoutez d'abord une URL de liste ou un identifiant Xtream.",
   Custom: "Personnalisé",
+  Player: "Lecteur",
+  Media3: "Media3",
+  "Expo player": "Lecteur Expo",
+  "Media3 plays MPEG-TS, HLS, MP4 and MKV with the playlist headers.":
+    "Media3 lit le MPEG-TS, le HLS, le MP4 et le MKV avec les en-têtes de la liste.",
 };

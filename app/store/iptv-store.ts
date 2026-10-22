@@ -24,12 +24,15 @@ interface IptvState {
   favorites: string[];
   userAgent: string;
   userAgentPreset: string;
+  /** media3 uses ExoPlayer directly. expo uses the shared video view. */
+  player: string;
   addSource: (source: IptvSource) => void;
   removeSource: (id: string) => void;
   toggleFavorite: (id: string) => void;
   isFavorite: (id: string) => boolean;
   setUserAgent: (userAgent: string) => void;
   setUserAgentPreset: (preset: string) => void;
+  setPlayer: (player: string) => void;
 }
 
 export const useIptv = create<IptvState>()(
@@ -39,6 +42,7 @@ export const useIptv = create<IptvState>()(
       favorites: [],
       userAgent: DEFAULT_IPTV_USER_AGENT,
       userAgentPreset: "vlc",
+      player: "media3",
       addSource: (source) =>
         set({ sources: [source, ...get().sources.filter((item) => item.id !== source.id)] }),
       removeSource: (id) =>
@@ -58,6 +62,7 @@ export const useIptv = create<IptvState>()(
         const known = IPTV_PRESETS.some((item) => item.id === preset);
         set({ userAgentPreset: known ? preset : "vlc" });
       },
+      setPlayer: (player) => set({ player: player === "expo" ? "expo" : "media3" }),
     }),
     {
       name: "cinelog.iptv.v1",
@@ -71,6 +76,7 @@ export const useIptv = create<IptvState>()(
           ...saved,
           userAgent: saved.userAgent?.trim() || current.userAgent,
           userAgentPreset: preset,
+          player: saved.player === "expo" ? "expo" : "media3",
         };
       },
     },

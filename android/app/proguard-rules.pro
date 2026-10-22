@@ -37,6 +37,9 @@
 -keep class com.google.firebase.** { *; }
 -dontwarn com.google.firebase.**
 
+# IPTV fetch and Media3 player
+-keep class com.cinelog.app.iptv.** { *; }
+
 # Home-screen widget bridge
 -keep class com.cinelog.app.widget.** { *; }
 

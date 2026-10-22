@@ -14,14 +14,14 @@ import { router } from "expo-router";
 import { useT } from "@/i18n";
 import { SeoHead } from "@/components/SeoHead";
 import { MobileHeader } from "@/components/navigation/MobileHeader";
-import { BroadcastPlayer } from "@/components/player/BroadcastPlayer";
+import { IptvPlayer } from "@/components/player/IptvPlayer";
 import { Button } from "@/components/ui/Button";
 import { Pressable } from "@/components/ui/Pressable";
 import { Screen } from "@/components/ui/Screen";
 import { FONTS, RADIUS, SPACING } from "@/constants/theme";
 import { makeStyles, useTheme } from "@/theme";
 import { useResponsive } from "@/hooks/useResponsive";
-import { diagnoseM3u, diagnoseXtream } from "@/lib/iptv/diagnose.mjs";
+import { reportM3u, reportXtream } from "@/lib/iptv/transport";
 import { IPTV_PRESETS, resolveUserAgent } from "@/lib/iptv/http.mjs";
 import {
   entriesFromM3u,
@@ -55,6 +55,8 @@ export default function IptvScreen() {
   const setUserAgent = useIptv((state) => state.setUserAgent);
   const preset = useIptv((state) => state.userAgentPreset);
   const setPreset = useIptv((state) => state.setUserAgentPreset);
+  const playerEngine = useIptv((state) => state.player);
+  const setPlayerEngine = useIptv((state) => state.setPlayer);
   const userAgent = resolveUserAgent(preset, storedAgent);
   const [sourceId, setSourceId] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -208,20 +210,20 @@ export default function IptvScreen() {
     setDiag("");
     try {
       if (form === "m3u" && draftUrl.trim()) {
-        setDiag((await diagnoseM3u({ url: draftUrl.trim(), userAgent })).join("\n"));
+        setDiag((await reportM3u(draftUrl.trim(), userAgent)).join("\n"));
       } else if (form === "xtream" && draftServer.trim() && draftUser.trim() && draftPass) {
-        setDiag((await diagnoseXtream({
+        setDiag((await reportXtream({
           server: draftServer.trim(),
           username: draftUser.trim(),
           password: draftPass,
           userAgent,
         })).join("\n"));
       } else if (source?.kind === "m3u" && source.url) {
-        setDiag((await diagnoseM3u({ url: source.url, userAgent })).join("\n"));
+        setDiag((await reportM3u(source.url, userAgent)).join("\n"));
       } else if (source?.kind === "xtream") {
         const password = await readSecret(iptvPasswordKey(source.id));
         if (!password) throw new Error(t("The saved Xtream password is missing. Add the playlist again."));
-        setDiag((await diagnoseXtream({
+        setDiag((await reportXtream({
           server: source.server,
           username: source.username,
           password,
@@ -366,7 +368,15 @@ export default function IptvScreen() {
             placeholderTextColor={colors.textMuted}
             style={styles.input}
           />
-          {playing ? <BroadcastPlayer key={playing} url={playing} headers={{ "User-Agent": userAgent }} /> : null}
+          {playing ? (
+            <IptvPlayer
+              key={playing}
+              url={playing}
+              userAgent={userAgent}
+              engine={playerEngine}
+              onError={(text) => setMessage(text)}
+            />
+          ) : null}
           {guide ? <Text style={styles.copy}>{t("Guide")}: {guide}</Text> : null}
           {busy ? <Text style={styles.copy}>{t("Loading")}</Text> : null}
           {message ? <Text style={styles.error}>{message}</Text> : null}
@@ -456,6 +466,21 @@ export default function IptvScreen() {
                       onPress={() => setPreset(item.id)}
                     >
                       <Text style={styles.chipText}>{item.label}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+                <Text style={styles.label}>{t("Player")}</Text>
+                <View style={styles.chips}>
+                  {([
+                    ["media3", "Media3"],
+                    ["expo", "Expo player"],
+                  ] as const).map(([id, label]) => (
+                    <Pressable
+                      key={id}
+                      style={[styles.chip, playerEngine === id ? styles.chipOn : null]}
+                      onPress={() => setPlayerEngine(id)}
+                    >
+                      <Text style={styles.chipText}>{label}</Text>
                     </Pressable>
                   ))}
                 </View>

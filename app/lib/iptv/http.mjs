@@ -75,11 +75,9 @@ export function formatExchangeReport(exchange) {
   for (const [name, value] of Object.entries(exchange?.requestHeaders || {})) {
     lines.push(`${name}: ${safeHeaderValue(name, value)}`);
   }
-  lines.push("Accept-Encoding: not sent");
-  lines.push("Accept-Language: not sent");
-  lines.push("Cookie: not sent");
-  lines.push("Referer: not sent");
-  lines.push("Origin: not sent");
+  for (const name of ["Accept-Encoding", "Accept-Language", "Cookie", "Referer", "Origin"]) {
+    if (!hasHeader(exchange?.requestHeaders || {}, name)) lines.push(`${name}: not sent`);
+  }
   if (exchange?.scheme) lines.push(exchange.scheme);
   lines.push(`Response: HTTP ${exchange?.status ?? ""}`.trim());
   const response = Object.entries(exchange?.responseHeaders || {});

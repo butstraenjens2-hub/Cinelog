@@ -619,4 +619,9 @@ export const NL: Record<string, string> = {
   "Add a playlist URL or Xtream login first.":
     "Voeg eerst een afspeellijst-URL of Xtream-login toe.",
   Custom: "Aangepast",
+  Player: "Speler",
+  Media3: "Media3",
+  "Expo player": "Expo-speler",
+  "Media3 plays MPEG-TS, HLS, MP4 and MKV with the playlist headers.":
+    "Media3 speelt MPEG-TS, HLS, MP4 en MKV met de afspeellijstheaders.",
 };

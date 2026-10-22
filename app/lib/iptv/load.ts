@@ -5,6 +5,7 @@
 import { parseXmltv } from "@/lib/live/xmltv.mjs";
 import { fetchPlaylist } from "@/lib/iptv/http.mjs";
 import { parseM3u } from "@/lib/iptv/m3u.mjs";
+import { readM3uEntries, readStep } from "@/lib/iptv/transport";
 import {
   formatCatchupStart,
   mapXtreamCategories,
@@ -48,6 +49,8 @@ export function entriesFromM3u(text: string): IptvEntry[] {
 
 export async function loadM3uUrl(url: string, userAgent?: string): Promise<IptvEntry[]> {
   try {
+    const native = await readM3uEntries(url, userAgent);
+    if (native) return native;
     return entriesFromM3u(await fetchPlaylist(url, { userAgent, step: "Playlist" }));
   } catch (cause) {
     if (cause instanceof Error && cause.message.startsWith("Playlist:")) throw cause;
@@ -57,7 +60,7 @@ export async function loadM3uUrl(url: string, userAgent?: string): Promise<IptvE
 
 async function fetchJsonStep(step: string, url: string, userAgent?: string): Promise<unknown> {
   try {
-    const text = await fetchPlaylist(url, { userAgent, step });
+    const text = await readStep(url, userAgent, step);
     return JSON.parse(text) as unknown;
   } catch (cause) {
     if (cause instanceof SyntaxError) {
@@ -142,7 +145,7 @@ export function xtreamPlayUrl(
 ): string {
   if (item.kind === "movie") return xtreamVodUrl(server, username, password, item.streamId, item.extension);
   if (item.kind === "series") return xtreamEpisodeUrl(server, username, password, item.streamId, item.extension);
-  return xtreamLiveUrl(server, username, password, item.streamId);
+  return xtreamLiveUrl(server, username, password, item.streamId, item.extension || "ts");
 }
 
 export function xtreamCatchupPlayUrl(
@@ -194,6 +197,6 @@ export async function loadXtreamEpisodes(
 }
 
 export async function loadGuide(url: string, userAgent?: string) {
-  const text = await fetchPlaylist(url, { userAgent, step: "Guide" });
+  const text = await readStep(url, userAgent, "Guide");
   return parseXmltv(text.slice(0, 2_000_000));
 }

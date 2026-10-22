@@ -6,9 +6,32 @@
 
 export const DEFAULT_IPTV_USER_AGENT = "VLC/3.0.21 LibVLC/3.0.21";
 
+/** Player names a panel may allow. Custom is whatever the viewer types. */
+export const IPTV_PRESETS = [
+  { id: "vlc", label: "VLC", userAgent: DEFAULT_IPTV_USER_AGENT },
+  { id: "smarters", label: "IPTV Smarters", userAgent: "IPTVSmartersPlayer" },
+  { id: "tivimate", label: "TiviMate", userAgent: "TiviMate/4.7.0" },
+  { id: "okhttp", label: "okhttp", userAgent: "okhttp/4.9.2" },
+  { id: "custom", label: "Custom", userAgent: "" },
+];
+
 export function effectiveUserAgent(value) {
   const trimmed = String(value ?? "").trim();
   return trimmed || DEFAULT_IPTV_USER_AGENT;
+}
+
+export function resolveUserAgent(preset, custom) {
+  const match = IPTV_PRESETS.find((item) => item.id === preset);
+  if (!match || match.id === "custom") return effectiveUserAgent(custom);
+  return match.userAgent;
+}
+
+/** Only these headers are sent. Referer and Origin are omitted on purpose. */
+export function playlistHeaders(userAgent) {
+  return {
+    "User-Agent": effectiveUserAgent(userAgent),
+    Accept: "application/json, application/vnd.apple.mpegurl, */*",
+  };
 }
 
 export function plainServerMessage(body) {
@@ -37,6 +60,12 @@ export function formatHttpError(status, body) {
   return detail ? `HTTP ${status}: ${detail}` : `HTTP ${status}`;
 }
 
+export function formatStepError(step, status, body) {
+  const http = formatHttpError(status, body);
+  const name = String(step ?? "").trim();
+  return name ? `${name}: ${http}` : http;
+}
+
 function clip(value) {
   return String(value).replace(/\s+/g, " ").trim().slice(0, 180);
 }
@@ -52,10 +81,7 @@ export async function fetchPlaylist(url, options = {}) {
   const response = await doFetch(url, {
     method: "GET",
     redirect: "follow",
-    headers: {
-      "User-Agent": userAgent,
-      Accept: "*/*",
-    },
+    headers: playlistHeaders(userAgent),
   });
   if (!response.ok) {
     let body = "";
@@ -64,8 +90,9 @@ export async function fetchPlaylist(url, options = {}) {
     } catch {
       body = "";
     }
-    const error = new Error(formatHttpError(response.status, body));
+    const error = new Error(formatStepError(options.step, response.status, body));
     error.status = response.status;
+    error.step = options.step || "";
     throw error;
   }
   return response.text();

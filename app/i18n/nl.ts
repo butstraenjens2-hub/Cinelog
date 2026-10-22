@@ -610,4 +610,13 @@ export const NL: Record<string, string> = {
   "User agent": "User-agent",
   "Playlist requests use this player name. Many servers refuse a browser name.":
     "Afspeellijstverzoeken gebruiken deze spelernaam. Veel servers weigeren een browsernaam.",
+  Films: "Films",
+  Shows: "Series",
+  Find: "Zoek",
+  Saved: "Bewaard",
+  Playlist: "Afspeellijst",
+  "Add / manage playlists": "Afspeellijsten toevoegen of beheren",
+  "Add a playlist URL or Xtream login first.":
+    "Voeg eerst een afspeellijst-URL of Xtream-login toe.",
+  Custom: "Aangepast",
 };

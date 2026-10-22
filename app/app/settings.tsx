@@ -17,7 +17,7 @@ import { makeStyles, useTheme } from "@/theme";
 import { useResponsive } from "@/hooks/useResponsive";
 import { ExportCalendarButton } from "@/components/integrations/ExportCalendarButton";
 import { SafeAlert } from "@/lib/safeAlert";
-import { DEFAULT_IPTV_USER_AGENT } from "@/lib/iptv/http.mjs";
+import { IPTV_PRESETS, resolveUserAgent } from "@/lib/iptv/http.mjs";
 import { useAuth } from "@/store/auth-store";
 import { useIptv } from "@/store/iptv-store";
 import { useLibrary } from "@/store/library-store";
@@ -62,6 +62,9 @@ export default function SettingsScreen() {
   const resetLibrary = useLibrary((state) => state.resetLibrary);
   const iptvUserAgent = useIptv((state) => state.userAgent);
   const setIptvUserAgent = useIptv((state) => state.setUserAgent);
+  const iptvPreset = useIptv((state) => state.userAgentPreset);
+  const setIptvPreset = useIptv((state) => state.setUserAgentPreset);
+  const resolvedAgent = resolveUserAgent(iptvPreset, iptvUserAgent);
 
   return (
     <>
@@ -334,15 +337,29 @@ export default function SettingsScreen() {
               label={t("User agent")}
               hint={t("Playlist requests use this player name. Many servers refuse a browser name.")}
             />
-            <TextInput
-              value={iptvUserAgent || DEFAULT_IPTV_USER_AGENT}
-              onChangeText={setIptvUserAgent}
-              autoCapitalize="none"
-              autoCorrect={false}
-              placeholder={DEFAULT_IPTV_USER_AGENT}
-              placeholderTextColor={colors.textMuted}
-              style={styles.input}
-            />
+            <View style={styles.pillRow}>
+              {IPTV_PRESETS.map((item) => (
+                <GenrePill
+                  key={item.id}
+                  label={item.label}
+                  selected={iptvPreset === item.id}
+                  onPress={() => setIptvPreset(item.id)}
+                />
+              ))}
+            </View>
+            {iptvPreset === "custom" ? (
+              <TextInput
+                value={iptvUserAgent}
+                onChangeText={setIptvUserAgent}
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholder="IPTVSmartersPlayer"
+                placeholderTextColor={colors.textMuted}
+                style={styles.input}
+              />
+            ) : (
+              <Text style={styles.rowHint}>{resolvedAgent}</Text>
+            )}
           </SettingsSection>
           </SettingsGroup>
 
@@ -388,7 +405,7 @@ export default function SettingsScreen() {
             <SettingsRow
               label="CineLog"
               hint={t("Version {{version}}", {
-                version: Constants.expoConfig?.version ?? "1.0.36",
+                version: Constants.expoConfig?.version ?? "1.0.37",
               })}
             />
           </SettingsSection>

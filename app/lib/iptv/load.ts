@@ -30,15 +30,6 @@ export interface IptvEntry {
   extension: string;
 }
 
-async function fetchText(url: string, userAgent?: string): Promise<string> {
-  return fetchPlaylist(url, { userAgent });
-}
-
-async function fetchJson(url: string, userAgent?: string): Promise<unknown> {
-  const text = await fetchText(url, userAgent);
-  return JSON.parse(text) as unknown;
-}
-
 export function entriesFromM3u(text: string): IptvEntry[] {
   return parseM3u(text).map((item) => ({
     id: item.id,
@@ -56,7 +47,38 @@ export function entriesFromM3u(text: string): IptvEntry[] {
 }
 
 export async function loadM3uUrl(url: string, userAgent?: string): Promise<IptvEntry[]> {
-  return entriesFromM3u(await fetchText(url, userAgent));
+  try {
+    return entriesFromM3u(await fetchPlaylist(url, { userAgent, step: "Playlist" }));
+  } catch (cause) {
+    if (cause instanceof Error && cause.message.startsWith("Playlist:")) throw cause;
+    throw cause;
+  }
+}
+
+async function fetchJsonStep(step: string, url: string, userAgent?: string): Promise<unknown> {
+  try {
+    const text = await fetchPlaylist(url, { userAgent, step });
+    return JSON.parse(text) as unknown;
+  } catch (cause) {
+    if (cause instanceof SyntaxError) {
+      throw new Error(`${step}: the server did not return JSON.`);
+    }
+    throw cause;
+  }
+}
+
+function assertXtreamLogin(payload: unknown) {
+  const info = payload as { user_info?: { auth?: number | string; message?: string } };
+  const auth = info?.user_info?.auth;
+  if (auth === 0 || auth === "0") {
+    const message = String(info.user_info?.message || "Login was refused.").slice(0, 180);
+    throw new Error(`Sign in: ${message}`);
+  }
+}
+
+export interface XtreamCatalogue {
+  items: IptvEntry[];
+  warnings: string[];
 }
 
 export async function loadXtreamCatalogue(
@@ -64,15 +86,23 @@ export async function loadXtreamCatalogue(
   username: string,
   password: string,
   userAgent?: string,
-): Promise<IptvEntry[]> {
-  const [liveCats, live, vodCats, vod, seriesCats, series] = await Promise.all([
-    fetchJson(xtreamApiUrl(server, username, password, "get_live_categories"), userAgent),
-    fetchJson(xtreamApiUrl(server, username, password, "get_live_streams"), userAgent),
-    fetchJson(xtreamApiUrl(server, username, password, "get_vod_categories"), userAgent),
-    fetchJson(xtreamApiUrl(server, username, password, "get_vod_streams"), userAgent),
-    fetchJson(xtreamApiUrl(server, username, password, "get_series_categories"), userAgent),
-    fetchJson(xtreamApiUrl(server, username, password, "get_series"), userAgent),
-  ]);
+): Promise<XtreamCatalogue> {
+  assertXtreamLogin(await fetchJsonStep("Sign in", xtreamApiUrl(server, username, password, ""), userAgent));
+  const warnings: string[] = [];
+  const take = async (step: string, action: string) => {
+    try {
+      return await fetchJsonStep(step, xtreamApiUrl(server, username, password, action), userAgent);
+    } catch (cause) {
+      warnings.push(cause instanceof Error ? cause.message : step);
+      return [];
+    }
+  };
+  const liveCats = await take("Live categories", "get_live_categories");
+  const live = await take("Live streams", "get_live_streams");
+  const vodCats = await take("Movie categories", "get_vod_categories");
+  const vod = await take("Movies", "get_vod_streams");
+  const seriesCats = await take("Series categories", "get_series_categories");
+  const series = await take("Series", "get_series");
   const names = new Map<string, string>();
   for (const category of [
     ...mapXtreamCategories(liveCats),
@@ -99,7 +129,9 @@ export async function loadXtreamCatalogue(
         extension: row.extension,
       }];
     });
-  return [...mapRows(live, "live"), ...mapRows(vod, "movie"), ...mapRows(series, "series")];
+  const items = [...mapRows(live, "live"), ...mapRows(vod, "movie"), ...mapRows(series, "series")];
+  if (!items.length && warnings.length) throw new Error(warnings.join("\n"));
+  return { items, warnings };
 }
 
 export function xtreamPlayUrl(
@@ -137,7 +169,8 @@ export async function loadXtreamEpisodes(
   seriesId: number,
   userAgent?: string,
 ): Promise<IptvEpisode[]> {
-  const info = (await fetchJson(
+  const info = (await fetchJsonStep(
+    "Episodes",
     xtreamApiUrl(server, username, password, "get_series_info", { series_id: seriesId }),
     userAgent,
   )) as { episodes?: Record<string, Array<Record<string, unknown>>> };
@@ -161,6 +194,6 @@ export async function loadXtreamEpisodes(
 }
 
 export async function loadGuide(url: string, userAgent?: string) {
-  const text = await fetchText(url, userAgent);
+  const text = await fetchPlaylist(url, { userAgent, step: "Guide" });
   return parseXmltv(text.slice(0, 2_000_000));
 }

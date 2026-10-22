@@ -6,7 +6,7 @@
  */
 
 import React from "react";
-import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -30,8 +30,6 @@ export function BottomNavigation({
   const { colors } = useTheme();
   const styles = useStyles();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
-  const compact = width < 380;
 
   return (
     <View
@@ -47,14 +45,7 @@ export function BottomNavigation({
     >
       {/* Glass effect blur on all platforms */}
       <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.row,
-          compact ? styles.rowCompact : null,
-        ]}
-      >
+      <View style={styles.row}>
         {NAV_ITEMS.map((item) => {
           const active = activeRoute === item.route;
           return (
@@ -64,36 +55,23 @@ export function BottomNavigation({
               accessibilityRole="tab"
               accessibilityState={{ selected: active }}
               accessibilityLabel={t(item.label)}
-              style={[styles.tab, compact ? styles.tabCompact : null]}
+              style={styles.tab}
               hitSlop={4}
             >
-              <View
-                style={[
-                  styles.iconWrap,
-                  compact ? styles.iconWrapCompact : null,
-                  active ? styles.iconWrapActive : null,
-                ]}
-              >
+              <View style={[styles.iconWrap, active ? styles.iconWrapActive : null]}>
                 <Ionicons
                   name={active ? item.activeIcon : item.icon}
-                  size={compact ? 19 : 21}
+                  size={22}
                   color={active ? "#FFFFFF" : colors.textMuted}
                 />
               </View>
-              <Text
-                style={[
-                  styles.label,
-                  compact ? styles.labelCompact : null,
-                  active ? styles.labelActive : null,
-                ]}
-                numberOfLines={1}
-              >
-                {t(item.label)}
+              <Text style={[styles.label, active ? styles.labelActive : null]} numberOfLines={1}>
+                {active ? t(item.shortLabel) : " "}
               </Text>
             </Pressable>
           );
         })}
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -111,27 +89,17 @@ const useStyles = makeStyles((c, t) => ({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    flexGrow: 1,
     minHeight: LAYOUT.bottomNavHeight,
-    paddingTop: 3,
-    paddingBottom: 6,
-    gap: 0,
-  },
-  rowCompact: {
-    minHeight: LAYOUT.bottomNavHeight - 2,
-    paddingBottom: 8,
+    paddingTop: 4,
+    paddingBottom: 4,
   },
   tab: {
-    flexGrow: 1,
-    flexShrink: 0,
-    minWidth: 76,
+    flex: 1,
+    minWidth: 0,
     alignItems: "center",
     justifyContent: "center",
-    gap: 3,
-    paddingHorizontal: 6,
-  },
-  tabCompact: {
     gap: 2,
+    paddingHorizontal: 2,
   },
   iconWrap: {
     width: 36,
@@ -139,11 +107,6 @@ const useStyles = makeStyles((c, t) => ({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-  },
-  iconWrapCompact: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
   },
   iconWrapActive: {
     backgroundColor: c.accent,
@@ -156,20 +119,15 @@ const useStyles = makeStyles((c, t) => ({
     elevation: 8,
   },
   label: {
-    fontFamily: FONTS.medium,
+    fontFamily: FONTS.semibold,
     fontSize: 10,
     lineHeight: 12,
-    paddingHorizontal: 1,
     textAlign: "center",
-    color: c.textMuted,
+    color: "transparent",
     includeFontPadding: false,
-  },
-  labelCompact: {
-    fontSize: 9,
-    lineHeight: 11,
+    width: "100%",
   },
   labelActive: {
-    fontFamily: FONTS.semibold,
     color: "#FFFFFF",
   },
 }));

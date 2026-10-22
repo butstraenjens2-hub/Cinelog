@@ -612,4 +612,13 @@ export const FR: Record<string, string> = {
   "User agent": "Agent utilisateur",
   "Playlist requests use this player name. Many servers refuse a browser name.":
     "Les requêtes de liste utilisent ce nom de lecteur. Beaucoup de serveurs refusent un nom de navigateur.",
+  Films: "Films",
+  Shows: "Séries",
+  Find: "Chercher",
+  Saved: "Enregistrés",
+  Playlist: "Liste",
+  "Add / manage playlists": "Ajouter ou gérer les listes",
+  "Add a playlist URL or Xtream login first.":
+    "Ajoutez d'abord une URL de liste ou un identifiant Xtream.",
+  Custom: "Personnalisé",
 };

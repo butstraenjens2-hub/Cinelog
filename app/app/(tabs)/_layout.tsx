@@ -22,7 +22,9 @@ export default function TabsLayout() {
   const pathname = usePathname();
   const user = useAuth((state) => state.user);
 
-  const activeRoute = `/${pathname.split("/").filter(Boolean).pop() ?? "home"}`;
+  const activeRoute = pathname === "/iptv" || pathname.startsWith("/iptv/")
+    ? "/iptv"
+    : `/${pathname.split("/").filter(Boolean).pop() ?? "home"}`;
 
   const navigate = useCallback((route: string) => {
     router.navigate(`/(tabs)${route}` as never);

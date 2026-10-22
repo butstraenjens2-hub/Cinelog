@@ -16,6 +16,7 @@ type NativePlayerProps = {
   userAgent: string;
   sourceKind: string;
   mimeType: string;
+  startPosition?: number;
   style?: { width: string; aspectRatio: number };
 };
 
@@ -29,12 +30,16 @@ export function IptvPlayer({
   url,
   userAgent,
   engine,
+  startPositionMs = 0,
   onError,
+  onProgress,
 }: {
   url: string;
   userAgent: string;
   engine: string;
+  startPositionMs?: number;
   onError?: (message: string) => void;
+  onProgress?: (positionMs: number, durationMs: number) => void;
 }) {
   const plan = playbackPlan(url);
   const useMedia3 = engine !== "expo" && NativeIptvPlayer != null;
@@ -52,6 +57,17 @@ export function IptvPlayer({
     return () => subscription.remove();
   }, [onError, useMedia3]);
 
+  useEffect(() => {
+    if (!useMedia3 || !onProgress) return undefined;
+    const subscription = DeviceEventEmitter.addListener(
+      "iptvPlaybackProgress",
+      (event: { positionMs?: number; durationMs?: number }) => {
+        onProgress(Number(event?.positionMs || 0), Number(event?.durationMs || 0));
+      },
+    );
+    return () => subscription.remove();
+  }, [onProgress, useMedia3]);
+
   if (useMedia3 && NativeIptvPlayer) {
     return (
       <View style={{ width: "100%", aspectRatio: 16 / 9, backgroundColor: "#000" }}>
@@ -60,6 +76,7 @@ export function IptvPlayer({
           userAgent={userAgent}
           sourceKind={plan.source}
           mimeType={plan.mime}
+          startPosition={startPositionMs}
           style={{ width: "100%", aspectRatio: 16 / 9 }}
         />
       </View>

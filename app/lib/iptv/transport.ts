@@ -4,7 +4,7 @@
  * Reports never include the request URL.
  */
 
-import { NativeModules, Platform } from "react-native";
+import * as ReactNative from "react-native";
 
 import { diagnoseM3u, diagnoseXtream, swapScheme } from "@/lib/iptv/diagnose.mjs";
 import {
@@ -16,12 +16,17 @@ import {
 import type { IptvEntry } from "@/lib/iptv/load";
 import { xtreamApiUrl } from "@/lib/iptv/xtream.mjs";
 
+const { NativeModules, Platform } = ReactNative;
+
 type NativeExchange = {
   ok?: boolean;
   status?: number;
   message?: string;
   path?: string;
   preview?: string;
+  snippet?: string;
+  contentType?: string;
+  bytes?: number;
   scheme?: string;
   requestHeaders?: Record<string, string>;
   responseHeaders?: Record<string, string>;
@@ -37,10 +42,38 @@ type NativeRow = {
   kind?: string;
 };
 
+type NativeParse = {
+  items?: NativeRow[];
+  reason?: string;
+  snippet?: string;
+  bytes?: number;
+};
+
+export interface DownloadProgress {
+  bytes: number;
+  phase: string;
+  count: number;
+}
+
+export interface NativePlaylist {
+  items: IptvEntry[];
+  status: number;
+  contentType: string;
+  bytes: number;
+  snippet: string;
+  reason: string;
+  details: string[];
+}
+
 type IptvNative = {
   exchange: (url: string, userAgent: string) => Promise<NativeExchange>;
   readText: (path: string) => Promise<string>;
-  parseM3u: (path: string) => Promise<NativeRow[]>;
+  parseM3u: (path: string) => Promise<NativeParse | NativeRow[]>;
+  cancel?: () => Promise<boolean>;
+};
+
+type Emitter = {
+  addListener: (name: string, listener: (event: DownloadProgress) => void) => { remove: () => void };
 };
 
 function nativeModule(): IptvNative | null {
@@ -68,6 +101,14 @@ function asEntry(row: NativeRow): IptvEntry | null {
   };
 }
 
+function headerValue(headers: Record<string, string> | undefined, name: string) {
+  const needle = name.toLowerCase();
+  for (const [key, value] of Object.entries(headers || {})) {
+    if (key.toLowerCase() === needle) return String(value || "");
+  }
+  return "";
+}
+
 async function nativeExchange(url: string, userAgent: string | undefined, step: string) {
   const native = nativeModule();
   if (!native) return null;
@@ -85,7 +126,25 @@ async function nativeExchange(url: string, userAgent: string | undefined, step: 
     (error as Error & { exchange?: typeof exchange }).exchange = exchange;
     throw error;
   }
-  return { exchange, path: String(result.path || ""), native };
+  return {
+    exchange,
+    path: String(result.path || ""),
+    native,
+    contentType: String(result.contentType || headerValue(result.responseHeaders, "content-type")),
+    bytes: Number(result.bytes || 0),
+    snippet: String(result.snippet || ""),
+  };
+}
+
+export function subscribeDownload(listener: (event: DownloadProgress) => void) {
+  const emitter = (ReactNative as { DeviceEventEmitter?: Emitter }).DeviceEventEmitter;
+  if (!emitter?.addListener) return { remove() {} };
+  return emitter.addListener("iptvDownloadProgress", listener);
+}
+
+export async function cancelDownload() {
+  const native = nativeModule();
+  if (native?.cancel) await native.cancel();
 }
 
 export async function readStep(url: string, userAgent: string | undefined, step: string): Promise<string> {
@@ -95,14 +154,42 @@ export async function readStep(url: string, userAgent: string | undefined, step:
   return hit.native.readText(hit.path);
 }
 
-export async function readM3uEntries(url: string, userAgent: string | undefined): Promise<IptvEntry[] | null> {
+export async function readM3uEntries(url: string, userAgent: string | undefined): Promise<NativePlaylist | null> {
   const hit = await nativeExchange(url, userAgent, "Playlist");
   if (!hit) return null;
-  const rows = hit.path ? await hit.native.parseM3u(hit.path) : [];
-  return rows.flatMap((row) => {
+  const parsed = hit.path ? await hit.native.parseM3u(hit.path) : [];
+  const rows = Array.isArray(parsed) ? parsed : parsed.items || [];
+  const items = rows.flatMap((row) => {
     const entry = asEntry(row);
     return entry ? [entry] : [];
   });
+  const snippet = String((!Array.isArray(parsed) && parsed.snippet) || hit.snippet || "");
+  const bytes = Number((!Array.isArray(parsed) && parsed.bytes) || hit.bytes || 0);
+  let reason = !Array.isArray(parsed) ? String(parsed.reason || "") : "";
+  if (!items.length && !reason) {
+    if (!bytes) reason = "empty body";
+    else if (snippet === "gzip binary" || snippet === "binary") reason = snippet;
+    else if (snippet.startsWith("#EXTM3U") || snippet.startsWith("HTML")) reason = snippet.startsWith("#EXTM3U") ? "no channel lines" : "HTML login page";
+    else reason = "not #EXTM3U";
+  }
+  const contentType = hit.contentType.split(";")[0].trim();
+  const details = [
+    hit.exchange.status ? `HTTP ${hit.exchange.status}` : "",
+    contentType ? `Content-Type: ${contentType}` : "",
+    `Bytes: ${bytes}`,
+    reason ? `Cause: ${reason}` : "",
+    snippet ? `Preview: ${snippet}` : "",
+    ...formatExchangeReport(hit.exchange),
+  ].filter(Boolean);
+  return {
+    items,
+    status: hit.exchange.status,
+    contentType,
+    bytes,
+    snippet,
+    reason: items.length ? "" : reason,
+    details,
+  };
 }
 
 function failureLines(error: unknown): string[] {
@@ -116,8 +203,10 @@ export async function reportM3u(url: string, userAgent?: string): Promise<string
   try {
     const hit = await nativeExchange(url, userAgent, "Playlist");
     if (!hit) return diagnoseM3u({ url, userAgent });
-    const preview = hit.exchange.body;
-    const line = preview.includes("#EXTM3U") ? "Playlist: OK" : "Playlist: OK, but the file is not an M3U playlist.";
+    const preview = hit.snippet || hit.exchange.body;
+    const line = preview.includes("#EXTM3U")
+      ? "Playlist: OK"
+      : `Playlist: OK, but the file is not an M3U playlist.${preview ? ` ${preview}` : ""}`;
     return [`User agent: ${effectiveUserAgent(userAgent)}`, line, ...formatExchangeReport(hit.exchange)];
   } catch (error) {
     const lines = [`User agent: ${effectiveUserAgent(userAgent)}`, ...failureLines(error)];

@@ -32,6 +32,18 @@ class IptvPlayerView(private val reactContext: ThemedReactContext) : FrameLayout
   private var kind = "progressive"
   private var mime = ""
   private var signature = ""
+  private var startMs = 0L
+  private var appliedStart = false
+  private val ticker: Runnable = Runnable {
+    val exo = player ?: return@Runnable
+    val payload = Arguments.createMap()
+    payload.putDouble("positionMs", exo.currentPosition.toDouble())
+    payload.putDouble("durationMs", exo.duration.coerceAtLeast(0).toDouble())
+    reactContext
+      .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+      .emit("iptvPlaybackProgress", payload)
+    postDelayed(ticker, 1000)
+  }
 
   init {
     setBackgroundColor(Color.BLACK)
@@ -63,6 +75,16 @@ class IptvPlayerView(private val reactContext: ThemedReactContext) : FrameLayout
     open()
   }
 
+  fun setStartPosition(value: Double) {
+    if (appliedStart) return
+    startMs = value.toLong().coerceAtLeast(0)
+    val exo = player
+    if (exo != null && startMs > 0 && exo.playbackState == Player.STATE_READY) {
+      appliedStart = true
+      exo.seekTo(startMs)
+    }
+  }
+
   private fun open() {
     if (url.isBlank()) return
     val next = "$url|$userAgent|$kind|$mime"
@@ -73,7 +95,10 @@ class IptvPlayerView(private val reactContext: ThemedReactContext) : FrameLayout
 
   private fun start(streamUrl: String, agent: String, sourceKind: String, mimeType: String) {
     errorText.visibility = GONE
+    removeCallbacks(ticker)
     player?.release()
+    val resumeAt = startMs
+    appliedStart = false
     val exo = ExoPlayer.Builder(reactContext).build()
     val dataSource = OkHttpDataSource.Factory(IptvHttp.client(agent)).setUserAgent(agent)
     val item = MediaItem.Builder().setUri(streamUrl).apply {
@@ -86,6 +111,13 @@ class IptvPlayerView(private val reactContext: ThemedReactContext) : FrameLayout
     }
     exo.setMediaSource(source)
     exo.addListener(object : Player.Listener {
+      override fun onPlaybackStateChanged(state: Int) {
+        if (state == Player.STATE_READY && resumeAt > 0 && !appliedStart) {
+          appliedStart = true
+          exo.seekTo(resumeAt)
+        }
+      }
+
       override fun onPlayerError(error: PlaybackException) {
         val status = httpStatus(error)
         val message = if (status > 0) "HTTP $status" else "Playback failed"
@@ -103,6 +135,7 @@ class IptvPlayerView(private val reactContext: ThemedReactContext) : FrameLayout
     exo.playWhenReady = true
     playerView.player = exo
     player = exo
+    postDelayed(ticker, 1000)
   }
 
   private fun httpStatus(error: Throwable): Int {
@@ -115,6 +148,7 @@ class IptvPlayerView(private val reactContext: ThemedReactContext) : FrameLayout
   }
 
   override fun onDetachedFromWindow() {
+    removeCallbacks(ticker)
     player?.release()
     player = null
     signature = ""
@@ -148,6 +182,11 @@ class IptvPlayerManager : SimpleViewManager<IptvPlayerView>() {
   @ReactProp(name = "mimeType")
   fun setMimeType(view: IptvPlayerView, mimeType: String?) {
     view.setStreamMime(mimeType ?: "")
+  }
+
+  @ReactProp(name = "startPosition")
+  fun setStartPosition(view: IptvPlayerView, startPosition: Double) {
+    view.setStartPosition(startPosition)
   }
 
   override fun onDropViewInstance(view: IptvPlayerView) {

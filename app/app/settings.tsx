@@ -415,7 +415,7 @@ export default function SettingsScreen() {
             <SettingsRow
               label="CineLog"
               hint={t("Version {{version}}", {
-                version: Constants.expoConfig?.version ?? "1.0.39",
+                version: Constants.expoConfig?.version ?? "1.0.40",
               })}
             />
           </SettingsSection>

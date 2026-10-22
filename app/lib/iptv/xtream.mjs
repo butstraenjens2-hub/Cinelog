@@ -75,6 +75,31 @@ export function formatCatchupStart(epochMs) {
   return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}:${pad(date.getUTCHours())}-${pad(date.getUTCMinutes())}`;
 }
 
+export function mapXtreamAccount(payload) {
+  const info = payload?.user_info && typeof payload.user_info === "object" ? payload.user_info : {};
+  const exp = Number(info.exp_date);
+  let expiry = "";
+  if (Number.isFinite(exp) && exp > 0) expiry = new Date(exp * 1000).toISOString();
+  return {
+    status: String(info.status || ""),
+    expiry,
+    maxConnections: String(info.max_connections ?? ""),
+    activeConnections: String(info.active_cons ?? ""),
+    message: String(info.message || "").replace(/\s+/g, " ").trim().slice(0, 180),
+  };
+}
+
+export function mapXtreamInfo(payload) {
+  const info = payload?.info && typeof payload.info === "object" ? payload.info : {};
+  return {
+    name: String(info.name || info.title || "").slice(0, 180),
+    plot: String(info.plot || info.description || "").slice(0, 2000),
+    rating: String(info.rating || ""),
+    cast: String(info.cast || "").slice(0, 500),
+    cover: String(info.cover_big || info.movie_image || info.cover || ""),
+  };
+}
+
 export function mapXtreamCategories(rows) {
   if (!Array.isArray(rows)) return [];
   return rows

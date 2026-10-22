@@ -3,7 +3,9 @@ import test from "node:test";
 
 import {
   formatCatchupStart,
+  mapXtreamAccount,
   mapXtreamCategories,
+  mapXtreamInfo,
   mapXtreamStreams,
   xtreamApiUrl,
   xtreamCatchupUrl,
@@ -40,4 +42,26 @@ test("xtream catalogue maps categories and catch-up only when the server offers 
   assert.equal(rows[0].tvgId, "one");
   const plain = mapXtreamStreams([{ stream_id: 2, name: "Film", tv_archive: 0 }], "movie");
   assert.equal(plain[0].archiveHours, 0);
+});
+
+test("xtream account and title info keep status, expiry, and plot", () => {
+  const account = mapXtreamAccount({
+    user_info: {
+      auth: 1,
+      status: "Active",
+      exp_date: "1792700000",
+      max_connections: "2",
+      active_cons: "1",
+      message: "Welcome",
+    },
+  });
+  assert.equal(account.status, "Active");
+  assert.equal(account.maxConnections, "2");
+  assert.equal(account.activeConnections, "1");
+  assert.equal(account.expiry, new Date(1792700000 * 1000).toISOString());
+  const info = mapXtreamInfo({ info: { plot: "A story", rating: "7.5", cast: "Ada", cover_big: "https://example.com/c.jpg", name: "Night" } });
+  assert.equal(info.plot, "A story");
+  assert.equal(info.rating, "7.5");
+  assert.equal(info.cast, "Ada");
+  assert.equal(info.name, "Night");
 });

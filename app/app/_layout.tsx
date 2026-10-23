@@ -78,6 +78,7 @@ function ThemedShell() {
           <Stack.Screen name="library/index" />
           <Stack.Screen name="addons" />
           <Stack.Screen name="legal" />
+          <Stack.Screen name="privacy" />
           <Stack.Screen name="import" />
           <Stack.Screen
             name="auth"

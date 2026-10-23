@@ -6,6 +6,7 @@ import { useT } from "@/i18n";
 import { SeoHead } from "@/components/SeoHead";
 import { Footer } from "@/components/layout/Footer";
 import { FloatingBackButton } from "@/components/navigation/MobileHeader";
+import { Button } from "@/components/ui/Button";
 import { Screen } from "@/components/ui/Screen";
 import { FONTS, SPACING } from "@/constants/theme";
 import { makeStyles } from "@/theme";
@@ -22,7 +23,7 @@ const SECTIONS: { heading: string; body: string }[] = [
   },
   {
     heading: "Third-party services",
-    body: "CineLog uses third-party services for metadata, trailers, authentication, notifications, analytics and playback embeds. These services may process technical data such as IP address, device model, app version, locale and request timestamps to deliver their functionality.",
+    body: "CineLog uses TMDB for titles and artwork, YouTube for trailers, and the servers and accounts you choose to connect. The privacy policy lists each service and what stays on the device.",
   },
   {
     heading: "Content and attribution",
@@ -46,7 +47,7 @@ const SECTIONS: { heading: string; body: string }[] = [
   },
   {
     heading: "Data categories we process",
-    body: "Depending on features you use, CineLog may process account identifiers, profile preferences, watch activity, search queries, notification tokens, crash diagnostics and anti-abuse telemetry. Sensitive payment card data is not processed directly by CineLog in this app flow.",
+    body: "The app stores your library, settings, and the keys you save on this device. It does not run an advertising or analytics SDK. The privacy policy is the full notice.",
   },
   {
     heading: "Why we process data",
@@ -100,6 +101,13 @@ export default function LegalScreen() {
           <Text style={styles.title} accessibilityRole="header">
             {t("Legal & Privacy")}
           </Text>
+          <Button
+            label={t("Privacy policy")}
+            icon="chevron-forward"
+            variant="secondary"
+            size="sm"
+            onPress={() => router.push("/privacy")}
+          />
           {SECTIONS.map((section) => (
             <View key={section.heading} style={styles.section}>
               <Text style={styles.heading} accessibilityRole="header">

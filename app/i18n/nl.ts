@@ -696,4 +696,6 @@ export const NL: Record<string, string> = {
   "Loaded with libVLC.": "Geladen met libVLC.",
   "Loaded with the Xtream API.": "Geladen met de Xtream-API.",
   libVLC: "libVLC",
+  "Privacy policy": "Privacybeleid",
+  "Read this policy on GitHub": "Lees dit beleid op GitHub",
 };

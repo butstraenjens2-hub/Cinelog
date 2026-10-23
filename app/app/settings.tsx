@@ -415,8 +415,15 @@ export default function SettingsScreen() {
             <SettingsRow
               label="CineLog"
               hint={t("Version {{version}}", {
-                version: Constants.expoConfig?.version ?? "1.0.41",
+                version: Constants.expoConfig?.version ?? "1.0.42",
               })}
+            />
+            <Button
+              label={t("Privacy policy")}
+              icon="chevron-forward"
+              variant="secondary"
+              size="sm"
+              onPress={() => router.push("/privacy")}
             />
           </SettingsSection>
           </SettingsGroup>

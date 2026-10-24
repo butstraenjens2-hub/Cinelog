@@ -3,6 +3,8 @@ name: Release Router
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
     inputs:
       force_route:
@@ -20,12 +22,15 @@ permissions:
 
 jobs:
   validate:
-    if: github.event_name == 'workflow_dispatch' || (github.actor != 'github-actions[bot]' && !contains(github.event.head_commit.message, '[skip ci]'))
+    # Pull requests already run ci.yml directly. Calling it again uses the same
+    # concurrency group and cancels that run before it starts.
+    if: github.event_name != 'pull_request' && (github.event_name == 'workflow_dispatch' || (github.actor != 'github-actions[bot]' && !contains(github.event.head_commit.message, '[skip ci]')))
     uses: ./.github/workflows/ci.yml
 
   decide:
     name: Build Decision Engine
     needs: validate
+    if: always() && (needs.validate.result == 'success' || (github.event_name == 'pull_request' && needs.validate.result == 'skipped'))
     runs-on: ubuntu-latest
     outputs:
       route: ${{ steps.decision.outputs.route }}
@@ -36,14 +41,14 @@ jobs:
       result_json: ${{ steps.decision.outputs.result_json }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
 
       - name: Install dependencies
@@ -67,7 +72,7 @@ jobs:
             --force "$FORCE_ROUTE"
 
   ota_release:
-    if: needs.decide.outputs.route_ota == 'true'
+    if: github.event_name != 'pull_request' && needs.decide.outputs.route_ota == 'true'
     needs: decide
     uses: ./.github/workflows/release-ota.yml
     secrets: inherit
@@ -76,7 +81,7 @@ jobs:
       route: ${{ needs.decide.outputs.route }}
 
   apk_release:
-    if: needs.decide.outputs.route_apk == 'true'
+    if: github.event_name != 'pull_request' && needs.decide.outputs.route_apk == 'true'
     needs: decide
     uses: ./.github/workflows/release-apk.yml
     secrets: inherit
@@ -85,7 +90,7 @@ jobs:
       route: ${{ needs.decide.outputs.route }}
 
   server_release:
-    if: needs.decide.outputs.route_server == 'true'
+    if: github.event_name != 'pull_request' && needs.decide.outputs.route_server == 'true'
     needs: decide
     uses: ./.github/workflows/release-server.yml
     secrets: inherit

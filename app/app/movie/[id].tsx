@@ -2,6 +2,7 @@ import React, { useCallback, useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 
+import { AddToListButton } from "@/components/actions/AddToListButton";
 import {
   PlayButton,
   TrailerButton,
@@ -14,6 +15,7 @@ import { SeoHead } from "@/components/SeoHead";
 import { Carousel } from "@/components/media/Carousel";
 import { CastCard } from "@/components/media/CastCard";
 import { WhereToWatch } from "@/components/media/WhereToWatch";
+import { CompanyLinks } from "@/components/media/CompanyLinks";
 import { PosterCard } from "@/components/media/PosterCard";
 import { TitleHero } from "@/components/media/TitleHero";
 import { FloatingBackButton } from "@/components/navigation/MobileHeader";
@@ -25,7 +27,7 @@ import { SPACING } from "@/constants/theme";
 import { useResponsive } from "@/hooks/useResponsive";
 import { useTrailerPlayer } from "@/hooks/useTrailerPlayer";
 import { openPerson, openTitle, parseIdParam } from "@/lib/cinelog/navigation";
-import { useMovieDetail } from "@/lib/cinelog/queries";
+import { useCollection, useMovieDetail } from "@/lib/cinelog/queries";
 import { formatRuntime } from "@/lib/format";
 import type { MediaSummary } from "@/lib/cinelog/types";
 import { toLibraryRef, useLibrary } from "@/store/library-store";
@@ -44,6 +46,7 @@ export default function MovieDetailScreen() {
 
   const detail = useMovieDetail(tmdbId);
   const movie = detail.data?.title;
+  const collection = useCollection(movie?.collection?.id ?? null);
 
   const trailer = useTrailerPlayer(detail.data?.trailers[0] ?? null);
   const openTrailer = trailer.open;
@@ -164,6 +167,7 @@ export default function MovieDetailScreen() {
                 }
               />
               <WatchlistButton item={ref} size="lg" />
+              <AddToListButton item={ref} />
             </>
           }
         />
@@ -181,6 +185,23 @@ export default function MovieDetailScreen() {
           </View>
 
           <WhereToWatch type="movie" tmdbId={movie.tmdbId} gutter={gutter} />
+          <CompanyLinks
+            title={t("Studios")}
+            companies={movie.companies}
+            kind="studio"
+            gutter={gutter}
+          />
+
+          {movie.collection ? (
+            <Carousel
+              title={t("Part of {{name}}", { name: movie.collection.name })}
+              items={collection.data?.parts ?? []}
+              isLoading={collection.isLoading}
+              itemWidth={railPosterWidth}
+              keyExtractor={(item) => item.id}
+              renderItem={renderPoster}
+            />
+          ) : null}
 
           {cast.length > 0 ? (
             <Carousel

@@ -24,7 +24,10 @@ const LIST_FILTERS: FilterOption<MovieListKey>[] = [
   { value: "top_rated", label: "Top Rated" },
   { value: "now_playing", label: "Now Playing" },
   { value: "upcoming", label: "Upcoming" },
+  { value: "streaming_be", label: "Streaming in Belgium" },
 ];
+
+const MOVIE_LISTS = new Set(LIST_FILTERS.map((filter) => filter.value));
 
 const ALL_GENRES = "all";
 
@@ -33,9 +36,13 @@ export default function MoviesScreen() {
   const styles = useStyles();
   const { isMobile, gutter } = useResponsive();
   const user = useAuth((state) => state.user);
-  const params = useLocalSearchParams<{ genre?: string }>();
+  const params = useLocalSearchParams<{ genre?: string; list?: string }>();
 
-  const [list, setList] = useState<MovieListKey>("popular");
+  const [list, setList] = useState<MovieListKey>(
+    params.list && MOVIE_LISTS.has(params.list as MovieListKey)
+      ? (params.list as MovieListKey)
+      : "popular",
+  );
   const [genreSlug, setGenreSlug] = useState<string>(
     params.genre && findGenre(params.genre) ? params.genre : ALL_GENRES,
   );

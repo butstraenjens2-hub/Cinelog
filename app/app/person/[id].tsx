@@ -7,6 +7,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useLocale, useT } from "@/i18n";
 import { Footer } from "@/components/layout/Footer";
 import { SeoHead } from "@/components/SeoHead";
+import { FollowPersonButton } from "@/components/actions/FollowButton";
 import { PosterGrid } from "@/components/media/PosterGrid";
 import { FloatingBackButton } from "@/components/navigation/MobileHeader";
 import { Screen } from "@/components/ui/Screen";
@@ -121,6 +122,14 @@ export default function PersonScreen() {
               <Text style={styles.role}>{person.knownForDepartment}</Text>
             ) : null}
             {lifespan ? <Text style={styles.meta}>{lifespan}</Text> : null}
+            <FollowPersonButton
+              person={{
+                id: person.id,
+                name: person.name,
+                photo: person.photo,
+                knownForDepartment: person.knownForDepartment,
+              }}
+            />
             {person.biography ? (
               <Text style={styles.bio} numberOfLines={isMobile ? 8 : 10}>
                 {person.biography}

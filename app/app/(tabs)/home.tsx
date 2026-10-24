@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { InteractionManager, ScrollView, Text, View } from "react-native";
+import { Image } from "expo-image";
 import { router } from "expo-router";
 
 import { useT } from "@/i18n";
@@ -11,6 +12,7 @@ import { HeroBanner } from "@/components/media/HeroBanner";
 import { PosterCard } from "@/components/media/PosterCard";
 import { UpNextCard } from "@/components/media/UpNextCard";
 import { MobileHeader } from "@/components/navigation/MobileHeader";
+import { Button } from "@/components/ui/Button";
 import { GenrePill } from "@/components/ui/GenrePill";
 import { Screen } from "@/components/ui/Screen";
 import { ErrorState } from "@/components/ui/States";
@@ -22,6 +24,7 @@ import { useTrackedSeries } from "@/hooks/useTrackedSeries";
 import { useBecauseYouLiked } from "@/hooks/useBecauseYouLiked";
 import type { UpNextEntry } from "@/lib/cinelog/upNext";
 import { GENRES } from "@/lib/cinelog/genres";
+import { sizedTmdbImage } from "@/lib/cinelog/images";
 import { openTitle } from "@/lib/cinelog/navigation";
 import {
   useInterleaved,
@@ -94,6 +97,12 @@ export default function HomeScreen() {
     enabled: secondaryRailsEnabled,
   });
   const topRatedSeries = useSeriesRail("top_rated", {
+    enabled: secondaryRailsEnabled,
+  });
+  const streamingBe = useMovieRail("streaming_be", {
+    enabled: secondaryRailsEnabled,
+  });
+  const airingToday = useSeriesRail("airing_today", {
     enabled: secondaryRailsEnabled,
   });
 
@@ -189,6 +198,22 @@ export default function HomeScreen() {
     () => topRated.filter(hasValidPoster),
     [topRated],
   );
+  const streamingItems = useMemo(
+    () => streamingBe.items.filter(hasValidPoster),
+    [streamingBe.items],
+  );
+  const airingItems = useMemo(
+    () => airingToday.items.filter(hasValidPoster),
+    [airingToday.items],
+  );
+
+  useEffect(() => {
+    const urls = trendingItems
+      .slice(0, 8)
+      .map((item) => sizedTmdbImage(item.poster, railPosterWidth))
+      .filter((url): url is string => Boolean(url));
+    if (urls.length > 0) void Image.prefetch(urls);
+  }, [trendingItems, railPosterWidth]);
   const recommendedItems = useMemo(
     () => recommended.map((entry) => entry.item).filter(hasValidPoster),
     [recommended],
@@ -338,6 +363,18 @@ export default function HomeScreen() {
             />
           ) : null}
 
+          {tracked.tracked.length > 0 ? (
+            <View style={{ paddingHorizontal: gutter }}>
+              <Button
+                label={t("Airing schedule")}
+                icon="calendar-outline"
+                variant="secondary"
+                size="sm"
+                onPress={() => router.push("/schedule")}
+              />
+            </View>
+          ) : null}
+
           {liked.seed && (liked.items.length > 0 || liked.isLoading) ? (
             <Carousel
               title={t("Because you liked {{title}}", { title: liked.seed.title })}
@@ -390,6 +427,37 @@ export default function HomeScreen() {
             keyExtractor={mediaKey}
             renderItem={renderPoster}
             onSeeAll={() => router.navigate("/(tabs)/series")}
+          />
+
+          <Carousel
+            title={t("Streaming in Belgium")}
+            subtitle={t("Legal offers in Belgium, via TMDB")}
+            items={streamingItems}
+            isLoading={secondaryRailsEnabled && streamingBe.isLoading}
+            itemWidth={railPosterWidth}
+            keyExtractor={mediaKey}
+            renderItem={renderPoster}
+            onSeeAll={() =>
+              router.navigate({
+                pathname: "/(tabs)/movies",
+                params: { list: "streaming_be" },
+              } as never)
+            }
+          />
+
+          <Carousel
+            title={t("Airing Today")}
+            items={airingItems}
+            isLoading={secondaryRailsEnabled && airingToday.isLoading}
+            itemWidth={railPosterWidth}
+            keyExtractor={mediaKey}
+            renderItem={renderPoster}
+            onSeeAll={() =>
+              router.navigate({
+                pathname: "/(tabs)/series",
+                params: { list: "airing_today" },
+              } as never)
+            }
           />
 
           <Carousel

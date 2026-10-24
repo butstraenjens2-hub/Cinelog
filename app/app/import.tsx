@@ -207,9 +207,6 @@ export default function ImportScreen() {
             </View>
           ) : null}
 
-          <Text style={styles.muted}>
-            {t("Trakt import is not available yet: it needs a registered Trakt app.")}
-          </Text>
         </View>
       </Screen>
     </>

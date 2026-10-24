@@ -22,12 +22,15 @@ permissions:
 
 jobs:
   validate:
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || (github.actor != 'github-actions[bot]' && !contains(github.event.head_commit.message, '[skip ci]'))
+    # Pull requests already run ci.yml directly. Calling it again uses the same
+    # concurrency group and cancels that run before it starts.
+    if: github.event_name != 'pull_request' && (github.event_name == 'workflow_dispatch' || (github.actor != 'github-actions[bot]' && !contains(github.event.head_commit.message, '[skip ci]')))
     uses: ./.github/workflows/ci.yml
 
   decide:
     name: Build Decision Engine
     needs: validate
+    if: always() && (needs.validate.result == 'success' || (github.event_name == 'pull_request' && needs.validate.result == 'skipped'))
     runs-on: ubuntu-latest
     outputs:
       route: ${{ steps.decision.outputs.route }}

@@ -22,6 +22,13 @@ export function openPerson(personId: number) {
   router.push(`/person/${personId}` as never);
 }
 
+export function openCompany(id: number, kind: "studio" | "network", name: string) {
+  router.push({
+    pathname: "/company/[id]",
+    params: { id: String(id), kind, name },
+  } as never);
+}
+
 export function goToTab(route: string) {
   router.navigate(`/(tabs)${route}` as never);
 }

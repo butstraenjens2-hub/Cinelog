@@ -23,7 +23,11 @@ const LIST_FILTERS: FilterOption<SeriesListKey>[] = [
   { value: "trending", label: "Trending" },
   { value: "top_rated", label: "Top Rated" },
   { value: "new_series", label: "New Series" },
+  { value: "airing_today", label: "Airing Today" },
+  { value: "on_the_air", label: "On the Air" },
 ];
+
+const SERIES_LISTS = new Set(LIST_FILTERS.map((filter) => filter.value));
 
 const ALL_GENRES = "all";
 
@@ -32,9 +36,13 @@ export default function SeriesScreen() {
   const styles = useStyles();
   const { isMobile, gutter } = useResponsive();
   const user = useAuth((state) => state.user);
-  const params = useLocalSearchParams<{ genre?: string }>();
+  const params = useLocalSearchParams<{ genre?: string; list?: string }>();
 
-  const [list, setList] = useState<SeriesListKey>("popular");
+  const [list, setList] = useState<SeriesListKey>(
+    params.list && SERIES_LISTS.has(params.list as SeriesListKey)
+      ? (params.list as SeriesListKey)
+      : "popular",
+  );
   const [genreSlug, setGenreSlug] = useState<string>(
     params.genre && findGenre(params.genre)?.seriesId
       ? params.genre

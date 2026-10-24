@@ -10,7 +10,7 @@ import { FilterBar, type FilterOption } from "@/components/media/FilterBar";
 import { PosterCard } from "@/components/media/PosterCard";
 import { PosterGridScreen } from "@/components/media/PosterGrid";
 import { MobileHeader } from "@/components/navigation/MobileHeader";
-import { IconButton } from "@/components/ui/Button";
+import { Button, IconButton } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/States";
 import { FONTS, SPACING } from "@/constants/theme";
 import { makeStyles } from "@/theme";
@@ -141,6 +141,11 @@ export default function WatchlistScreen() {
               {t("Watchlist")}
             </Text>
           )}
+          <View style={[styles.links, { paddingHorizontal: gutter }]}>
+            <Button label={t("Lists")} size="sm" variant="secondary" onPress={() => router.push("/lists")} />
+            <Button label={t("Followed")} size="sm" variant="secondary" onPress={() => router.push("/followed")} />
+            <Button label={t("Airing schedule")} size="sm" variant="secondary" onPress={() => router.push("/schedule")} />
+          </View>
           <Text style={[styles.subtitle, { paddingHorizontal: gutter }]}>
             {watchlist.length === 0
               ? t("Everything you save lands here")
@@ -220,6 +225,11 @@ const useStyles = makeStyles((c, t) => ({
     fontSize: 14,
     color: c.textSecondary,
     marginTop: -SPACING.sm,
+  },
+  links: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: SPACING.sm,
   },
   offlineBadge: {
     position: "absolute",

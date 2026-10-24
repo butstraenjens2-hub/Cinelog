@@ -31,7 +31,7 @@ const SECTIONS: { heading: string; body: string }[] = [
   },
   {
     heading: "Your media servers",
-    body: "Sonarr, Radarr, Trakt, Jellyfin, Emby, Seerr, Overseerr, Tautulli, and SIMKL connections are optional and talk only to servers and accounts you configure. API keys are stored in the device keystore. Adding a title does not search for files unless you turn that option on, and even then the search runs on your server with the indexers you already configured. Jellyfin and Emby playback is a direct stream of a file on that server. CineLog does not ship indexers, download clients, or add-on installers.",
+    body: "A Jellyfin or Emby connection is optional and talks only to the server you configure. The access token is stored in the device keystore. Playback is a direct stream of a file already on that server. CineLog does not ship indexers, download clients, or add-on installers.",
   },
   {
     heading: "Trailers",

@@ -277,20 +277,14 @@ export default function SettingsScreen() {
           </SettingsGroup>
 
           <SettingsGroup title={t("Integrations")}>
-          <SettingsSection title={t("Integrations")} icon="server-outline">
+          <SettingsSection title={t("Jellyfin or Emby")} icon="server-outline">
             <SettingsRow
-              label={t("Sonarr, Radarr and Trakt")}
+              label={t("Jellyfin or Emby")}
               hint={t(
-                "Connect your own servers. API keys stay in the device keystore. CineLog does not add indexers, download clients, or unlicensed sources.",
+                "Play a file that is already on your own server. The access token stays in the device keystore.",
               )}
             />
-            <Button label="Sonarr" icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/sonarr" as never)} />
-            <Button label="Radarr" icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/radarr" as never)} />
-            <Button label="Trakt" icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/trakt" as never)} />
-            <Button label="SIMKL" icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/simkl" as never)} />
             <Button label={t("Jellyfin or Emby")} icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/jellyfin" as never)} />
-            <Button label={t("Seerr or Overseerr")} icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/seerr" as never)} />
-            <Button label="Tautulli" icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/tautulli" as never)} />
           </SettingsSection>
           </SettingsGroup>
 
@@ -336,7 +330,7 @@ export default function SettingsScreen() {
             <SettingsRow
               label="CineLog"
               hint={t("Version {{version}}", {
-                version: Constants.expoConfig?.version ?? "1.0.44",
+                version: Constants.expoConfig?.version ?? "1.0.45",
               })}
             />
             <Button

@@ -3,7 +3,7 @@
  * Callers attach secrets as headers. This helper does not put them in the URL.
  */
 
-import { joinApi, normalizeServerUrl } from "@/lib/servarr/url.mjs";
+import { joinApi, normalizeServerUrl } from "@/lib/own-server/url.mjs";
 
 export class OwnServerError extends Error {
   readonly status: number;
@@ -35,7 +35,7 @@ export async function ownFetch<T>(
 
   const headers: Record<string, string> = {
     Accept: "application/json",
-    "User-Agent": "CineLog/1.0.44",
+    "User-Agent": "CineLog/1.0.45",
     ...options.headers,
   };
   let body: string | undefined;

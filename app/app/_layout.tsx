@@ -18,7 +18,6 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useNotificationSync } from "@/hooks/useNotificationSync";
 import { useOfflineWatchlist } from "@/hooks/useOfflineWatchlist";
-import { useTraktAutoSync } from "@/hooks/useTraktAutoSync";
 import { warmupApi } from "@/lib/http";
 import { persistOptions, queryClient } from "@/lib/query-client";
 import { startAuthSync } from "@/store/auth-store";
@@ -37,7 +36,6 @@ function ThemedShell() {
 
   useNotificationSync();
   useOfflineWatchlist();
-  useTraktAutoSync();
 
   useEffect(() => {
     SystemUI.setBackgroundColorAsync(colors.background).catch(() => {
@@ -66,13 +64,7 @@ function ThemedShell() {
           <Stack.Screen name="person/[id]" />
           <Stack.Screen name="profile" />
           <Stack.Screen name="settings" />
-          <Stack.Screen name="integrations/sonarr" />
-          <Stack.Screen name="integrations/radarr" />
-          <Stack.Screen name="integrations/trakt" />
           <Stack.Screen name="integrations/jellyfin" />
-          <Stack.Screen name="integrations/seerr" />
-          <Stack.Screen name="integrations/tautulli" />
-          <Stack.Screen name="integrations/simkl" />
           <Stack.Screen name="integrations/profiles" />
           <Stack.Screen name="library/index" />
           <Stack.Screen name="addons" />

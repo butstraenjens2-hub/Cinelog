@@ -10,16 +10,7 @@ import * as SecureStore from "expo-secure-store";
 const memory = new Map<string, string>();
 
 export const SECRET = {
-  sonarrApiKey: "cinelog.sonarr.apiKey",
-  radarrApiKey: "cinelog.radarr.apiKey",
-  traktClientSecret: "cinelog.trakt.clientSecret",
-  traktAccessToken: "cinelog.trakt.accessToken",
-  traktRefreshToken: "cinelog.trakt.refreshToken",
   jellyfinToken: "cinelog.jellyfin.token",
-  seerrApiKey: "cinelog.seerr.apiKey",
-  tautulliApiKey: "cinelog.tautulli.apiKey",
-  simklAccessToken: "cinelog.simkl.accessToken",
-  simklRefreshToken: "cinelog.simkl.refreshToken",
 } as const;
 
 export async function readSecret(key: string): Promise<string> {

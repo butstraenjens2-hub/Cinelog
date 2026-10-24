@@ -16,7 +16,7 @@ export interface JellyfinItem {
 
 function authHeaders(token: string): Record<string, string> {
   return {
-    "X-Emby-Authorization": mediaBrowserAuthHeader("1.0.44"),
+    "X-Emby-Authorization": mediaBrowserAuthHeader("1.0.45"),
     ...(token ? { "X-Emby-Token": token } : {}),
   };
 }

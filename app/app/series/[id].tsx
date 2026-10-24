@@ -14,8 +14,6 @@ import { Footer } from "@/components/layout/Footer";
 import { SeoHead } from "@/components/SeoHead";
 import { Carousel } from "@/components/media/Carousel";
 import { CastCard } from "@/components/media/CastCard";
-import { AddToServarrButton } from "@/components/integrations/AddToServarrButton";
-import { RequestOnSeerrButton } from "@/components/integrations/RequestOnSeerrButton";
 import { WhereToWatch } from "@/components/media/WhereToWatch";
 import { EpisodeCard } from "@/components/media/EpisodeCard";
 import { CompanyLinks } from "@/components/media/CompanyLinks";
@@ -453,11 +451,6 @@ export default function SeriesDetailScreen() {
             gutter={gutter}
           />
           <WhereToWatch type="series" tmdbId={series.tmdbId} gutter={gutter} />
-
-          <View style={{ paddingHorizontal: gutter, gap: 8 }}>
-            <AddToServarrButton kind="sonarr" tmdbId={series.tmdbId} title={series.title} />
-            <RequestOnSeerrButton mediaType="tv" tmdbId={series.tmdbId} title={series.title} />
-          </View>
 
           {cast.length > 0 ? (
             <Carousel

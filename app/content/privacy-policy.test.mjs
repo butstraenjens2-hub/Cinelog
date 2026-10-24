@@ -23,8 +23,6 @@ test("the privacy policy states the facts checked against the app", () => {
     "under 16",
     "jonger dan 16",
     "TMDB",
-    "api.simkl.com",
-    "api.trakt.tv",
     "Sonarr",
     "Radarr",
     "Jellyfin",
@@ -43,6 +41,8 @@ test("the privacy policy states the facts checked against the app", () => {
   ]) {
     assert.equal(combined.includes(phrase), true, phrase);
   }
+  assert.equal(combined.includes("api.simkl.com"), false);
+  assert.equal(combined.includes("api.trakt.tv"), false);
   assert.equal(html.includes("googletagmanager"), false);
   assert.equal(html.includes("cookie"), true);
 });

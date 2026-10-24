@@ -3,6 +3,8 @@ name: Deploy web
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -10,48 +12,48 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: "22"
           cache: npm
 
       - name: Install dependencies
         run: npm install
 
       - name: Create production env
+        # The fallback file is written with printf. An unindented heredoc
+        # ends the YAML block and GitHub rejects the workflow before any job starts.
         run: |
-          if [ -f .env.production.example ]; then
-            cp .env.production.example .env
-            cp .env.production.example app/.env
-          else
-            cat > .env.production.example <<'EOF'
-EXPO_PUBLIC_API_BASE=
-EXPO_PUBLIC_API_BASES=
-EXPO_PUBLIC_SUPABASE_URL=
-EXPO_PUBLIC_SUPABASE_ANON_KEY=
-EXPO_PUBLIC_TMDB_API_KEY=
-EXPO_PUBLIC_REVENUECAT_IOS_API_KEY=
-EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY=
-NODE_ENV=production
-PORT=10000
-EOF
-            cp .env.production.example .env
-            cp .env.production.example app/.env
+          if [ ! -f .env.production.example ]; then
+            printf '%s\n' \
+              'EXPO_PUBLIC_API_BASE=' \
+              'EXPO_PUBLIC_API_BASES=' \
+              'EXPO_PUBLIC_SUPABASE_URL=' \
+              'EXPO_PUBLIC_SUPABASE_ANON_KEY=' \
+              'EXPO_PUBLIC_TMDB_API_KEY=' \
+              'EXPO_PUBLIC_REVENUECAT_IOS_API_KEY=' \
+              'EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY=' \
+              'NODE_ENV=production' \
+              'PORT=10000' \
+              > .env.production.example
           fi
+          cp .env.production.example .env
+          cp .env.production.example app/.env
 
       - name: Export Expo web build
         run: npm -w app run web:export
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cinelog-web-dist
           path: app/dist
 
       - name: Deploy to Vercel (if token present)
+        if: github.event_name != 'pull_request'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
@@ -65,6 +67,7 @@ EOF
           fi
 
       - name: Deploy to Netlify (if token + site id present)
+        if: github.event_name != 'pull_request'
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}

@@ -277,6 +277,15 @@ export default function SettingsScreen() {
           </SettingsGroup>
 
           <SettingsGroup title={t("Integrations")}>
+          <SettingsSection title="Radarr" icon="film-outline">
+            <SettingsRow
+              label="Radarr"
+              hint={t(
+                "See whether a movie is already in your Radarr library, and add it when it is not. The API key stays in the device keystore.",
+              )}
+            />
+            <Button label="Radarr" icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/radarr" as never)} />
+          </SettingsSection>
           <SettingsSection title={t("Jellyfin or Emby")} icon="server-outline">
             <SettingsRow
               label={t("Jellyfin or Emby")}
@@ -330,7 +339,7 @@ export default function SettingsScreen() {
             <SettingsRow
               label="CineLog"
               hint={t("Version {{version}}", {
-                version: Constants.expoConfig?.version ?? "1.0.45",
+                version: Constants.expoConfig?.version ?? "1.0.46",
               })}
             />
             <Button

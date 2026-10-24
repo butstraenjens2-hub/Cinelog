@@ -31,7 +31,7 @@ const SECTIONS: { heading: string; body: string }[] = [
   },
   {
     heading: "Your media servers",
-    body: "A Jellyfin or Emby connection is optional and talks only to the server you configure. The access token is stored in the device keystore. Playback is a direct stream of a file already on that server. CineLog does not ship indexers, download clients, or add-on installers.",
+    body: "A Jellyfin or Emby connection is optional and talks only to the server you configure. The access token is stored in the device keystore. Playback is a direct stream of a file already on that server. A Radarr connection is also optional. Movie pages can show whether a title is already in that library, and can add it. The Radarr API key is stored in the device keystore. Adding a movie does not search for a file unless you turn that option on, and then the search runs on your Radarr server. CineLog does not ship indexers, download clients, or add-on installers.",
   },
   {
     heading: "Trailers",

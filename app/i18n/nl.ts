@@ -460,6 +460,8 @@ export const NL: Record<string, string> = {
     "Koppel je eigen Radarr-server om films, ontbrekende bestanden, de kalender, wachtrij en geschiedenis te zien.",
   "Add to Sonarr": "Toevoegen aan Sonarr",
   "Add to Radarr": "Toevoegen aan Radarr",
+  "In Radarr": "In Radarr",
+  "Not in Radarr": "Niet in Radarr",
   "Quality profile": "Kwaliteitsprofiel",
   "Root folder": "Hoofdmap",
   "Also ask Sonarr to search for missing episodes":

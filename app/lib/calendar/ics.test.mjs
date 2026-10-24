@@ -23,7 +23,7 @@ test("jellyfin direct stream stays on the server path and does not embed a key",
   const path = directStreamPath("abc/1", "src 2");
   assert.equal(path.includes("api_key"), false);
   assert.match(path, /^\/Videos\/abc%2F1\/stream\?static=true&MediaSourceId=src%202$/);
-  const header = mediaBrowserAuthHeader("1.0.45");
+  const header = mediaBrowserAuthHeader("1.0.46");
   assert.match(header, /Client="CineLog"/);
-  assert.match(header, /Version="1\.0\.45"/);
+  assert.match(header, /Version="1\.0\.46"/);
 });

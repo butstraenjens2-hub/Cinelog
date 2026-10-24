@@ -462,6 +462,8 @@ export const FR: Record<string, string> = {
     "Connectez votre serveur Radarr pour voir les films, les fichiers manquants, le calendrier, la file et l'historique.",
   "Add to Sonarr": "Ajouter à Sonarr",
   "Add to Radarr": "Ajouter à Radarr",
+  "In Radarr": "Dans Radarr",
+  "Not in Radarr": "Pas dans Radarr",
   "Quality profile": "Profil de qualité",
   "Root folder": "Dossier racine",
   "Also ask Sonarr to search for missing episodes":

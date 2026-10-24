@@ -10,6 +10,7 @@ import * as SecureStore from "expo-secure-store";
 const memory = new Map<string, string>();
 
 export const SECRET = {
+  radarrApiKey: "cinelog.radarr.apiKey",
   jellyfinToken: "cinelog.jellyfin.token",
 } as const;
 

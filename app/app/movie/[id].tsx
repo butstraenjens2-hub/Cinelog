@@ -14,6 +14,7 @@ import { Footer } from "@/components/layout/Footer";
 import { SeoHead } from "@/components/SeoHead";
 import { Carousel } from "@/components/media/Carousel";
 import { CastCard } from "@/components/media/CastCard";
+import { AddToRadarrButton } from "@/components/integrations/AddToRadarrButton";
 import { WhereToWatch } from "@/components/media/WhereToWatch";
 import { CompanyLinks } from "@/components/media/CompanyLinks";
 import { PosterCard } from "@/components/media/PosterCard";
@@ -191,6 +192,10 @@ export default function MovieDetailScreen() {
             kind="studio"
             gutter={gutter}
           />
+
+          <View style={{ paddingHorizontal: gutter, gap: 8 }}>
+            <AddToRadarrButton tmdbId={movie.tmdbId} title={movie.title} />
+          </View>
 
           {movie.collection ? (
             <Carousel

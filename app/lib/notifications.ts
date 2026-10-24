@@ -110,6 +110,12 @@ export async function syncNotifications(
     if (!(await ensurePermission(notifications))) return;
 
     const { SchedulableTriggerInputTypes } = notifications;
+    if (Platform.OS === "android") {
+      await notifications.setNotificationChannelAsync("cinelog", {
+        name: "CineLog",
+        importance: notifications.AndroidImportance.DEFAULT,
+      });
+    }
 
     if (prefs.newReleases) {
       for (const { item, releaseAt } of releaseReminders(watchlist)) {
@@ -122,6 +128,7 @@ export async function syncNotifications(
           trigger: {
             type: SchedulableTriggerInputTypes.DATE,
             date: new Date(releaseAt),
+            channelId: "cinelog",
           },
         });
       }
@@ -136,8 +143,9 @@ export async function syncNotifications(
             title: translate("New episode of {{title}}", {
               title: episode.series.title,
             }),
-            body: translate("{{code}} is out today.", {
+            body: translate("{{code}} {{name}} is out today.", {
               code: episodeCode(episode.seasonNumber, episode.episodeNumber),
+              name: episode.name || "",
             }),
             data: {
               type: "episode",
@@ -148,6 +156,7 @@ export async function syncNotifications(
           trigger: {
             type: SchedulableTriggerInputTypes.DATE,
             date: at,
+            channelId: "cinelog",
           },
         });
       }
@@ -166,6 +175,7 @@ export async function syncNotifications(
           type: SchedulableTriggerInputTypes.TIME_INTERVAL,
           seconds: WEEK_IN_SECONDS,
           repeats: true,
+          channelId: "cinelog",
         },
       });
     }
@@ -183,6 +193,7 @@ export async function syncNotifications(
           type: SchedulableTriggerInputTypes.TIME_INTERVAL,
           seconds: WEEK_IN_SECONDS,
           repeats: true,
+          channelId: "cinelog",
         },
       });
     }

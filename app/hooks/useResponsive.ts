@@ -24,14 +24,17 @@ export interface Responsive {
   gutter: number;
   /** Poster width used by the horizontal rails. */
   railPosterWidth: number;
+  /** Android TV and other leanback devices use the 10-foot layout. */
+  isTv: boolean;
 }
 
 export function useResponsive(): Responsive {
   const { width, height } = useWindowDimensions();
 
-  const isMobile = width < BREAKPOINTS.mobile;
-  const isTablet = width >= BREAKPOINTS.mobile && width < BREAKPOINTS.tablet;
-  const isDesktop = width >= BREAKPOINTS.tablet;
+  const isTv = Platform.isTV === true;
+  const isMobile = !isTv && width < BREAKPOINTS.mobile;
+  const isTablet = !isTv && width >= BREAKPOINTS.mobile && width < BREAKPOINTS.tablet;
+  const isDesktop = isTv || width >= BREAKPOINTS.tablet;
 
   const gridColumns =
     width >= 1800
@@ -44,9 +47,9 @@ export function useResponsive(): Responsive {
             ? 4
             : 2;
 
-  const gutter = isMobile ? 16 : isTablet ? 24 : 32;
+  const gutter = isTv ? 48 : isMobile ? 16 : isTablet ? 24 : 32;
 
-  const railPosterWidth = isMobile ? 124 : isTablet ? 150 : 168;
+  const railPosterWidth = isTv ? 220 : isMobile ? 124 : isTablet ? 150 : 168;
 
   return {
     width,
@@ -55,8 +58,9 @@ export function useResponsive(): Responsive {
     isTablet,
     isDesktop,
     supportsHover: Platform.OS === "web" && !isMobile,
-    gridColumns,
+    gridColumns: isTv ? Math.max(gridColumns, 5) : gridColumns,
     gutter,
     railPosterWidth,
+    isTv,
   };
 }

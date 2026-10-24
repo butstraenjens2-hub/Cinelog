@@ -5,7 +5,7 @@
  */
 
 import React from "react";
-import { Platform, StatusBar, StyleSheet, Text, View } from "react-native";
+import { Platform, ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -15,6 +15,7 @@ import { CineLogLogo } from "@/components/brand/CineLogLogo";
 import { NAV_ITEMS } from "@/components/navigation/navItems";
 import { FONTS, LAYOUT, RADIUS, SPACING } from "@/constants/theme";
 import { makeStyles, useTheme } from "@/theme";
+import { useResponsive } from "@/hooks/useResponsive";
 import { Pressable } from "@/components/ui/Pressable";
 
 export interface DesktopNavigationProps {
@@ -37,6 +38,7 @@ export function DesktopNavigation({
   const t = useT();
   const { colors } = useTheme();
   const styles = useStyles();
+  const { isTv } = useResponsive();
   const insets = useSafeAreaInsets();
   const statusBarHeight =
     insets.top > 0
@@ -67,7 +69,12 @@ export function DesktopNavigation({
         <CineLogLogo size={26} />
       </Pressable>
 
-      <View style={styles.links}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.linkScroll}
+        contentContainerStyle={styles.links}
+      >
         {NAV_ITEMS.map((item) => {
           const active = activeRoute === item.route;
           return (
@@ -77,15 +84,17 @@ export function DesktopNavigation({
               accessibilityRole="tab"
               accessibilityState={{ selected: active }}
               accessibilityLabel={t(item.label)}
-              style={({ hovered }) => [
+              style={({ hovered, focused }) => [
                 styles.link,
+                isTv ? styles.linkTv : null,
                 hovered && !active ? styles.linkHovered : null,
+                focused ? styles.linkFocused : null,
                 active ? styles.linkActive : null,
               ]}
             >
               <Ionicons
                 name={active ? item.activeIcon : item.icon}
-                size={15}
+                size={isTv ? 22 : 15}
                 color={active ? colors.textPrimary : colors.textSecondary}
               />
               <Text
@@ -96,7 +105,7 @@ export function DesktopNavigation({
             </Pressable>
           );
         })}
-      </View>
+      </ScrollView>
 
       <Pressable
         onPress={onOpenProfile}
@@ -141,25 +150,41 @@ const useStyles = makeStyles((c, t) => ({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: c.border,
   },
+  linkScroll: {
+    flex: 1,
+    minWidth: 0,
+  },
   links: {
     flexDirection: "row",
     alignItems: "center",
+    flexWrap: "nowrap",
+    flexGrow: 1,
     gap: SPACING.xs,
-    flex: 1,
-    justifyContent: "center",
+    paddingRight: SPACING.sm,
   },
   logoPressable: {
-    minWidth: 0,
-    flexShrink: 1,
+    flexShrink: 0,
     paddingRight: SPACING.sm,
   },
   link: {
     flexDirection: "row",
     alignItems: "center",
+    flexGrow: 1,
+    flexShrink: 0,
+    justifyContent: "center",
     gap: SPACING.sm,
     paddingHorizontal: SPACING.lg,
     height: 38,
     borderRadius: RADIUS.pill,
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  linkTv: {
+    height: 52,
+    paddingHorizontal: SPACING.xl,
+  },
+  linkFocused: {
+    borderColor: c.accent,
   },
   linkHovered: {
     backgroundColor: c.glass,
@@ -170,6 +195,7 @@ const useStyles = makeStyles((c, t) => ({
   linkText: {
     fontFamily: FONTS.medium,
     fontSize: 14,
+    flexShrink: 0,
     color: c.textSecondary,
   },
   linkTextActive: {

@@ -37,6 +37,14 @@
 -keep class com.google.firebase.** { *; }
 -dontwarn com.google.firebase.**
 
+# IPTV fetch, Media3 player, and the libVLC bridge
+-keep class com.cinelog.app.iptv.** { *; }
+-keep class org.videolan.libvlc.** { *; }
+-dontwarn org.videolan.libvlc.**
+
+# Home-screen widget bridge
+-keep class com.cinelog.app.widget.** { *; }
+
 # Kotlin metadata used by expo-modules-core reflection
 -keep class kotlin.Metadata { *; }
 -keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod

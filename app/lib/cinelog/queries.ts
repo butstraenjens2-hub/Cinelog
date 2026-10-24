@@ -14,6 +14,7 @@ import {
   MOVIE_LIST_SPECS,
   SERIES_LIST_SPECS,
   canPaginate,
+  fetchCollection,
   fetchMovieDetail,
   fetchMovieList,
   fetchMoviesByGenre,
@@ -48,7 +49,9 @@ export const mediaKeys = {
   seriesDetail: (id: number) => ["media", "series", id] as const,
   season: (seriesId: number, seasonNumber: number) =>
     ["media", "series", seriesId, "season", seasonNumber] as const,
-  search: (query: string) => ["media", "search", query] as const,
+  search: (query: string, year: number | null) =>
+    ["media", "search", query, year ?? "any"] as const,
+  collection: (id: number) => ["media", "collection", id] as const,
   person: (id: number) => ["media", "person", id] as const,
   trailer: (type: MediaType, id: number) =>
     ["media", "trailer", type, id] as const,
@@ -191,19 +194,32 @@ function dedupe(
 function useBrowse(query: ReturnType<typeof useMediaList>): Browse {
   // Deduping every page on each render is O(n); memoise on the page data.
   const items = useMemo(() => dedupe(query.data?.pages), [query.data]);
-  return {
-    items,
-    isLoading: query.isLoading,
-    isError: query.isError,
-    isLoadingMore: query.isFetchingNextPage,
-    canLoadMore: query.hasNextPage,
-    loadMore: () => {
-      if (query.hasNextPage && !query.isFetchingNextPage) {
-        void query.fetchNextPage();
-      }
-    },
-    refetch: () => void query.refetch(),
-  };
+  const loadMore = useCallback(() => {
+    if (query.hasNextPage && !query.isFetchingNextPage) {
+      void query.fetchNextPage();
+    }
+  }, [query.hasNextPage, query.isFetchingNextPage, query.fetchNextPage]);
+  const refetch = useCallback(() => void query.refetch(), [query.refetch]);
+  return useMemo(
+    () => ({
+      items,
+      isLoading: query.isLoading,
+      isError: query.isError,
+      isLoadingMore: query.isFetchingNextPage,
+      canLoadMore: Boolean(query.hasNextPage),
+      loadMore,
+      refetch,
+    }),
+    [
+      items,
+      query.isLoading,
+      query.isError,
+      query.isFetchingNextPage,
+      query.hasNextPage,
+      loadMore,
+      refetch,
+    ],
+  );
 }
 
 export function useMovieBrowse(
@@ -308,14 +324,60 @@ export function useTrailer(
 
 // ── Search ───────────────────────────────────────────────────────────────────
 
-export function useSearch(query: string) {
+export function useSearch(query: string, year: number | null = null) {
   const trimmed = query.trim();
-  return useQuery({
-    queryKey: mediaKeys.search(trimmed.toLowerCase()),
-    queryFn: () => searchMedia(trimmed),
+  const result = useInfiniteQuery({
+    queryKey: mediaKeys.search(trimmed.toLowerCase(), year),
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) => searchMedia(trimmed, pageParam, year ?? undefined),
+    getNextPageParam: (last) =>
+      last.page < Math.min(last.totalPages, 20) ? last.page + 1 : undefined,
     enabled: trimmed.length >= 2,
     staleTime: STALE.medium,
-    placeholderData: (previous) => previous,
+  });
+  const data = useMemo(() => {
+    const pages = result.data?.pages ?? [];
+    if (pages.length === 0) return undefined;
+    const seen = new Set<string>();
+    const movies: MediaSummary[] = [];
+    const series: MediaSummary[] = [];
+    for (const page of pages) {
+      for (const item of page.movies) {
+        if (seen.has(item.id)) continue;
+        seen.add(item.id);
+        movies.push(item);
+      }
+      for (const item of page.series) {
+        if (seen.has(item.id)) continue;
+        seen.add(item.id);
+        series.push(item);
+      }
+    }
+    return {
+      movies,
+      series,
+      people: pages[0]?.people ?? [],
+      page: pages[pages.length - 1]?.page ?? 1,
+      totalPages: pages[0]?.totalPages ?? 1,
+    };
+  }, [result.data]);
+  return {
+    data,
+    isFetching: result.isFetching,
+    isError: result.isError,
+    refetch: result.refetch,
+    hasNextPage: result.hasNextPage,
+    fetchNextPage: result.fetchNextPage,
+    isFetchingNextPage: result.isFetchingNextPage,
+  };
+}
+
+export function useCollection(collectionId: number | null) {
+  return useQuery({
+    queryKey: mediaKeys.collection(collectionId ?? 0),
+    queryFn: () => fetchCollection(collectionId as number),
+    enabled: typeof collectionId === "number" && collectionId > 0,
+    staleTime: STALE.long,
   });
 }
 

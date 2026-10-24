@@ -1,7 +1,7 @@
 {
   "name": "cinelog-app",
   "main": "expo-router/entry",
-  "version": "1.0.32",
+  "version": "1.0.43",
   "scripts": {
     "postinstall": "patch-package || true",
     "brand:assets": "node scripts/build-brand-assets.mjs",
@@ -42,10 +42,13 @@
     "expo-notifications": "~0.32.16",
     "expo-router": "~6.0.17",
     "expo-screen-orientation": "~9.0.9",
+    "expo-secure-store": "~15.0.8",
+    "expo-sharing": "~14.0.8",
     "expo-splash-screen": "~31.0.12",
     "expo-status-bar": "~3.0.9",
     "expo-system-ui": "~6.0.9",
     "expo-updates": "~29.0.16",
+    "expo-video": "~3.0.16",
     "firebase": "^12.11.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",

@@ -119,6 +119,14 @@ android {
             abiFilters "arm64-v8a", "armeabi-v7a"
         }
     }
+    splits {
+        abi {
+            enable true
+            reset()
+            include "armeabi-v7a", "arm64-v8a"
+            universalApk true
+        }
+    }
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
@@ -161,8 +169,11 @@ android {
     }
     packagingOptions {
         jniLibs {
-            def enableLegacyPackaging = findProperty('expo.useLegacyPackaging') ?: 'false'
-            useLegacyPackaging = enableLegacyPackaging.toBoolean()
+            // Compress native libraries. libvlc.so is about 40 MB per ABI when
+            // stored uncompressed, which pushes a two-ABI APK past 100 MB.
+            useLegacyPackaging = true
+            // libVLC and React Native both ship this library.
+            pickFirsts += ["**/libc++_shared.so"]
         }
     }
     androidResources {
@@ -193,6 +204,18 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
+    // Media3 is Apache-2.0. The same 1.8.0 line is already used by expo-video.
+    // IPTV playback uses it directly so MPEG-TS, HLS, MP4 and MKV share one header client.
+    implementation("androidx.media3:media3-exoplayer:1.8.0")
+    implementation("androidx.media3:media3-exoplayer-hls:1.8.0")
+    implementation("androidx.media3:media3-ui:1.8.0")
+    implementation("androidx.media3:media3-datasource-okhttp:1.8.0")
+    implementation("com.squareup.okhttp3:okhttp:4.9.2")
+    // libVLC is LGPL-2.1. This links the published AAR only and does not
+    // copy the GPL VLC application source.
+    implementation("org.videolan.android:libvlc-all:3.6.5")
+    // Installs the checked-in baseline profile so ART can speed up startup.
+    implementation("androidx.profileinstaller:profileinstaller:1.4.1")
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";

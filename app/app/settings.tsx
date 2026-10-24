@@ -1,6 +1,7 @@
 import React from "react";
-import { Platform, StatusBar, Switch, Text, View } from "react-native";
+import { Platform, StatusBar, Switch, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import Constants from "expo-constants";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -14,11 +15,15 @@ import { Screen } from "@/components/ui/Screen";
 import { FONTS, RADIUS, SPACING } from "@/constants/theme";
 import { makeStyles, useTheme } from "@/theme";
 import { useResponsive } from "@/hooks/useResponsive";
+import { ExportCalendarButton } from "@/components/integrations/ExportCalendarButton";
 import { SafeAlert } from "@/lib/safeAlert";
+import { IPTV_PRESETS, resolveUserAgent } from "@/lib/iptv/http.mjs";
 import { useAuth } from "@/store/auth-store";
+import { useIptv } from "@/store/iptv-store";
 import { useLibrary } from "@/store/library-store";
 import {
   LANGUAGES,
+  WATCH_REGIONS,
   useSettings,
   type LanguageCode,
   type ThemeMode,
@@ -33,6 +38,7 @@ const THEMES: { value: ThemeMode; label: string }[] = [
 export default function SettingsScreen() {
   const t = useT();
   const styles = useStyles();
+  const { colors } = useTheme();
   const { gutter } = useResponsive();
   const insets = useSafeAreaInsets();
   const statusBarHeight = insets.top > 0 ? insets.top : (Platform.OS === "android" ? (StatusBar.currentHeight ?? 24) : 0);
@@ -45,6 +51,8 @@ export default function SettingsScreen() {
   const setTheme = useSettings((state) => state.setTheme);
   const language = useSettings((state) => state.language);
   const setLanguage = useSettings((state) => state.setLanguage);
+  const watchRegion = useSettings((state) => state.watchRegion);
+  const setWatchRegion = useSettings((state) => state.setWatchRegion);
   const notifications = useSettings((state) => state.notifications);
   const setNotification = useSettings((state) => state.setNotification);
   const privacy = useSettings((state) => state.privacy);
@@ -52,6 +60,13 @@ export default function SettingsScreen() {
 
   const clearHistory = useLibrary((state) => state.clearHistory);
   const resetLibrary = useLibrary((state) => state.resetLibrary);
+  const iptvUserAgent = useIptv((state) => state.userAgent);
+  const setIptvUserAgent = useIptv((state) => state.setUserAgent);
+  const iptvPreset = useIptv((state) => state.userAgentPreset);
+  const setIptvPreset = useIptv((state) => state.setUserAgentPreset);
+  const iptvPlayer = useIptv((state) => state.player);
+  const setIptvPlayer = useIptv((state) => state.setPlayer);
+  const resolvedAgent = resolveUserAgent(iptvPreset, iptvUserAgent);
 
   return (
     <>
@@ -74,6 +89,7 @@ export default function SettingsScreen() {
         </View>
 
         <View style={[styles.sections, { paddingHorizontal: gutter }]}>
+          <SettingsGroup title={t("Account and profiles")}>
           <SettingsSection title={t("Profile")} icon="person-circle-outline">
             <SettingsRow
               label={user ? user.displayName : t("Not signed in")}
@@ -90,6 +106,13 @@ export default function SettingsScreen() {
                 size="sm"
               />
             )}
+            <Button
+              label={t("Household profiles")}
+              icon="chevron-forward"
+              variant="secondary"
+              size="sm"
+              onPress={() => router.push("/integrations/profiles" as never)}
+            />
           </SettingsSection>
 
           <SettingsSection title={t("Appearance")} icon="color-palette-outline">
@@ -135,52 +158,6 @@ export default function SettingsScreen() {
               variant="secondary"
               size="sm"
               onPress={() => router.push("/import" as never)}
-            />
-          </SettingsSection>
-
-          <SettingsSection title={t("Addons")} icon="rocket-outline">
-            <SettingsRow
-              label={t("Streaming sources")}
-              hint={t(
-                "Manage Torrentio, Comet, Meteor and automatic best-source playback.",
-              )}
-            />
-            <Button
-              label={t("Open Addons")}
-              icon="chevron-forward"
-              variant="secondary"
-              size="sm"
-              onPress={() => router.push("/addons")}
-            />
-          </SettingsSection>
-
-          <SettingsSection
-            title={t("Notifications")}
-            icon="notifications-outline"
-          >
-            <ToggleRow
-              label={t("New releases")}
-              hint={t("Tell me when something I follow lands")}
-              value={notifications.newReleases}
-              onChange={(value) => setNotification("newReleases", value)}
-            />
-            <ToggleRow
-              label={t("New episodes")}
-              hint={t("Remind me when a show I follow airs a new episode")}
-              value={notifications.newEpisodes !== false}
-              onChange={(value) => setNotification("newEpisodes", value)}
-            />
-            <ToggleRow
-              label={t("Recommendations")}
-              hint={t("Weekly picks based on what I watch")}
-              value={notifications.recommendations}
-              onChange={(value) => setNotification("recommendations", value)}
-            />
-            <ToggleRow
-              label={t("Watchlist reminders")}
-              hint={t("Nudge me about titles I saved but haven't watched")}
-              value={notifications.watchlistReminders}
-              onChange={(value) => setNotification("watchlistReminders", value)}
             />
           </SettingsSection>
 
@@ -271,11 +248,208 @@ export default function SettingsScreen() {
               />
             ) : null}
           </SettingsSection>
+          </SettingsGroup>
+
+          <SettingsGroup title={t("Playback")}>
+          <SettingsSection title={t("Where to watch")} icon="tv-outline">
+            <SettingsRow
+              label={t("Region")}
+              hint={t("Legal streaming, rent and buy offers from TMDB for this country.")}
+            />
+            <View style={styles.pillRow}>
+              {WATCH_REGIONS.map((option) => (
+                <GenrePill
+                  key={option.code}
+                  label={option.code}
+                  selected={watchRegion === option.code}
+                  onPress={() => setWatchRegion(option.code)}
+                />
+              ))}
+            </View>
+          </SettingsSection>
+
+          <SettingsSection title={t("Addons")} icon="rocket-outline">
+            <SettingsRow
+              label={t("Streaming sources")}
+              hint={t(
+                "Manage Torrentio, Comet, Meteor and automatic best-source playback.",
+              )}
+            />
+            <Button
+              label={t("Open Addons")}
+              icon="chevron-forward"
+              variant="secondary"
+              size="sm"
+              onPress={() => router.push("/addons")}
+            />
+          </SettingsSection>
+
+          </SettingsGroup>
+
+          <SettingsGroup title={t("Integrations")}>
+          <SettingsSection title={t("Integrations")} icon="server-outline">
+            <SettingsRow
+              label={t("Sonarr, Radarr and Trakt")}
+              hint={t(
+                "Connect your own servers. API keys stay in the device keystore. CineLog does not add indexers, download clients, or unlicensed sources.",
+              )}
+            />
+            <Button label="Sonarr" icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/sonarr" as never)} />
+            <Button label="Radarr" icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/radarr" as never)} />
+            <Button label="Trakt" icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/trakt" as never)} />
+            <Button label="SIMKL" icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/simkl" as never)} />
+            <Button label={t("Jellyfin or Emby")} icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/jellyfin" as never)} />
+            <Button label={t("Seerr or Overseerr")} icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/seerr" as never)} />
+            <Button label="Tautulli" icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/tautulli" as never)} />
+            <Button label={t("Kodi remote")} icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/kodi" as never)} />
+          </SettingsSection>
+          </SettingsGroup>
+
+          <SettingsGroup title={t("Live TV and IPTV")}>
+          <SettingsSection title={t("Live TV")} icon="radio-outline">
+            <SettingsRow
+              label={t("Live TV")}
+              hint={t(
+                "Official free channels from France 24, DW and Al Jazeera. NASA+ and NHK WORLD-JAPAN open their official pages.",
+              )}
+            />
+            <Button
+              label={t("Live TV")}
+              icon="chevron-forward"
+              variant="secondary"
+              size="sm"
+              onPress={() => router.push("/live" as never)}
+            />
+          </SettingsSection>
+          <SettingsSection title="IPTV" icon="list-outline">
+            <SettingsRow
+              label="IPTV"
+              hint={t(
+                "CineLog does not include any playlist. Add your own M3U URL, M3U file, or Xtream login.",
+              )}
+            />
+            <Button
+              label="IPTV"
+              icon="chevron-forward"
+              variant="secondary"
+              size="sm"
+              onPress={() => router.push("/iptv" as never)}
+            />
+            <SettingsRow
+              label={t("User agent")}
+              hint={t("Playlist requests use this player name. Many servers refuse a browser name.")}
+            />
+            <View style={styles.pillRow}>
+              {IPTV_PRESETS.map((item) => (
+                <GenrePill
+                  key={item.id}
+                  label={item.label}
+                  selected={iptvPreset === item.id}
+                  onPress={() => setIptvPreset(item.id)}
+                />
+              ))}
+            </View>
+            {iptvPreset === "custom" ? (
+              <TextInput
+                value={iptvUserAgent}
+                onChangeText={setIptvUserAgent}
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholder="IPTVSmartersPlayer"
+                placeholderTextColor={colors.textMuted}
+                style={styles.input}
+              />
+            ) : (
+              <Text style={styles.rowHint}>{resolvedAgent}</Text>
+            )}
+            <SettingsRow
+              label={t("Player")}
+              hint={t("Media3 plays MPEG-TS, HLS, MP4 and MKV with the playlist headers.")}
+            />
+            <View style={styles.pillRow}>
+              <GenrePill label="Media3" selected={iptvPlayer !== "expo"} onPress={() => setIptvPlayer("media3")} />
+              <GenrePill label="Expo player" selected={iptvPlayer === "expo"} onPress={() => setIptvPlayer("expo")} />
+            </View>
+          </SettingsSection>
+          </SettingsGroup>
+
+          <SettingsGroup title={t("Notifications")}>
+          <SettingsSection
+            title={t("Notifications")}
+            icon="notifications-outline"
+          >
+            <ToggleRow
+              label={t("New releases")}
+              hint={t("Tell me when something I follow lands")}
+              value={notifications.newReleases}
+              onChange={(value) => setNotification("newReleases", value)}
+            />
+            <ToggleRow
+              label={t("New episodes")}
+              hint={t("Remind me when a show I follow airs a new episode")}
+              value={notifications.newEpisodes !== false}
+              onChange={(value) => setNotification("newEpisodes", value)}
+            />
+            <ToggleRow
+              label={t("Recommendations")}
+              hint={t("Weekly picks based on what I watch")}
+              value={notifications.recommendations}
+              onChange={(value) => setNotification("recommendations", value)}
+            />
+            <ToggleRow
+              label={t("Watchlist reminders")}
+              hint={t("Nudge me about titles I saved but haven't watched")}
+              value={notifications.watchlistReminders}
+              onChange={(value) => setNotification("watchlistReminders", value)}
+            />
+            <SettingsRow
+              label={t("Export calendar")}
+              hint={t("Share upcoming episodes of shows you follow as an .ics file.")}
+            />
+            <ExportCalendarButton />
+          </SettingsSection>
+          </SettingsGroup>
+
+          <SettingsGroup title={t("About")}>
+          <SettingsSection title={t("About")} icon="information-circle-outline">
+            <SettingsRow
+              label="CineLog"
+              hint={t("Version {{version}}", {
+                version: Constants.expoConfig?.version ?? "1.0.43",
+              })}
+            />
+            <Button
+              label={t("Privacy policy")}
+              icon="chevron-forward"
+              variant="secondary"
+              size="sm"
+              onPress={() => router.push("/privacy")}
+            />
+          </SettingsSection>
+          </SettingsGroup>
         </View>
 
         <Footer />
       </Screen>
     </>
+  );
+}
+
+function SettingsGroup({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  const styles = useStyles();
+  return (
+    <View style={styles.group}>
+      <Text style={styles.groupTitle} accessibilityRole="header">
+        {title}
+      </Text>
+      {children}
+    </View>
   );
 }
 
@@ -367,6 +541,16 @@ const useStyles = makeStyles((c, t) => ({
     gap: SPACING.xl,
     maxWidth: 720,
   },
+  group: {
+    gap: SPACING.lg,
+  },
+  groupTitle: {
+    fontFamily: FONTS.extrabold,
+    fontSize: 12,
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    color: c.textMuted,
+  },
   section: {
     gap: SPACING.md,
   },
@@ -408,6 +592,19 @@ const useStyles = makeStyles((c, t) => ({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: SPACING.sm,
+  },
+  input: {
+    alignSelf: "stretch",
+    width: "100%",
+    borderWidth: 1,
+    borderColor: c.border,
+    backgroundColor: c.background,
+    color: c.textPrimary,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    fontFamily: FONTS.regular,
+    fontSize: 14,
   },
   toggleRow: {
     flexDirection: "row",

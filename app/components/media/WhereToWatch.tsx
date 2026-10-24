@@ -18,6 +18,7 @@ import { FONTS, RADIUS, SPACING } from "@/constants/theme";
 import { makeStyles, useTheme } from "@/theme";
 import { useWatchProviders } from "@/lib/cinelog/queries";
 import type { MediaType, WatchProvider } from "@/lib/cinelog/types";
+import { useSettings } from "@/store/settings-store";
 
 export interface WhereToWatchProps {
   type: MediaType;
@@ -37,16 +38,19 @@ export function WhereToWatch({
   type,
   tmdbId,
   gutter,
-  region = "BE",
+  region,
 }: WhereToWatchProps) {
   const t = useT();
   const styles = useStyles();
   const { colors } = useTheme();
-  const providers = useWatchProviders(type, tmdbId, region);
+  const storedRegion = useSettings((state) => state.watchRegion);
+  const activeRegion = (region || storedRegion || "BE").toUpperCase();
+  const providers = useWatchProviders(type, tmdbId, activeRegion);
 
   // Stay silent while loading or when the lookup fails; this is a bonus section.
   if (!providers.data) return null;
   const data = providers.data;
+  const regionCode = data.region || activeRegion;
   const groups = GROUPS.map((group) => ({
     ...group,
     items: data[group.key] as WatchProvider[],
@@ -55,7 +59,7 @@ export function WhereToWatch({
   const openLink = () => {
     const url =
       data.link ??
-      `https://www.themoviedb.org/${type === "movie" ? "movie" : "tv"}/${tmdbId}/watch?locale=${region}`;
+      `https://www.themoviedb.org/${type === "movie" ? "movie" : "tv"}/${tmdbId}/watch?locale=${regionCode}`;
     void Linking.openURL(url).catch(() => undefined);
   };
 
@@ -66,7 +70,9 @@ export function WhereToWatch({
       </Text>
       {groups.length === 0 ? (
         <Text style={styles.empty}>
-          {t("Not currently available on streaming services in Belgium.")}
+          {t("Not currently available on streaming services in {{region}}.", {
+            region: regionCode,
+          })}
         </Text>
       ) : (
         groups.map((group) => (

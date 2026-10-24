@@ -30,12 +30,8 @@ const SECTIONS: { heading: string; body: string }[] = [
     body: "Titles, artwork, cast information, ratings and trailers come from The Movie Database (TMDB). CineLog uses the TMDB API but is not endorsed or certified by TMDB. All artwork and metadata remain the property of their respective rights holders.",
   },
   {
-    heading: "Live TV",
-    body: "The Live TV section plays only official free streams we could verify: NASA TV (US government, public domain) and France 24 on the broadcaster's own servers. Deutsche Welle and NHK WORLD-JAPAN open their official live pages. CineLog does not include third-party IPTV playlists, torrent or usenet sources, or download clients.",
-  },
-  {
     heading: "Your media servers",
-    body: "Sonarr, Radarr, Trakt, Jellyfin, Emby, Seerr, Overseerr, Tautulli, SIMKL and Kodi connections are optional and talk only to servers and accounts you configure. API keys are stored in the device keystore. Adding a title does not search for files unless you turn that option on, and even then the search runs on your server with the indexers you already configured. Jellyfin and Emby playback is a direct stream of a file on that server. The Kodi screen is a remote control. CineLog does not ship indexers, download clients, or add-on installers.",
+    body: "Sonarr, Radarr, Trakt, Jellyfin, Emby, Seerr, Overseerr, Tautulli, and SIMKL connections are optional and talk only to servers and accounts you configure. API keys are stored in the device keystore. Adding a title does not search for files unless you turn that option on, and even then the search runs on your server with the indexers you already configured. Jellyfin and Emby playback is a direct stream of a file on that server. CineLog does not ship indexers, download clients, or add-on installers.",
   },
   {
     heading: "Trailers",

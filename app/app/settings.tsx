@@ -1,5 +1,5 @@
 import React from "react";
-import { Platform, StatusBar, Switch, Text, TextInput, View } from "react-native";
+import { Platform, StatusBar, Switch, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import { router } from "expo-router";
@@ -17,9 +17,7 @@ import { makeStyles, useTheme } from "@/theme";
 import { useResponsive } from "@/hooks/useResponsive";
 import { ExportCalendarButton } from "@/components/integrations/ExportCalendarButton";
 import { SafeAlert } from "@/lib/safeAlert";
-import { IPTV_PRESETS, resolveUserAgent } from "@/lib/iptv/http.mjs";
 import { useAuth } from "@/store/auth-store";
-import { useIptv } from "@/store/iptv-store";
 import { useLibrary } from "@/store/library-store";
 import {
   LANGUAGES,
@@ -38,7 +36,6 @@ const THEMES: { value: ThemeMode; label: string }[] = [
 export default function SettingsScreen() {
   const t = useT();
   const styles = useStyles();
-  const { colors } = useTheme();
   const { gutter } = useResponsive();
   const insets = useSafeAreaInsets();
   const statusBarHeight = insets.top > 0 ? insets.top : (Platform.OS === "android" ? (StatusBar.currentHeight ?? 24) : 0);
@@ -60,13 +57,6 @@ export default function SettingsScreen() {
 
   const clearHistory = useLibrary((state) => state.clearHistory);
   const resetLibrary = useLibrary((state) => state.resetLibrary);
-  const iptvUserAgent = useIptv((state) => state.userAgent);
-  const setIptvUserAgent = useIptv((state) => state.setUserAgent);
-  const iptvPreset = useIptv((state) => state.userAgentPreset);
-  const setIptvPreset = useIptv((state) => state.setUserAgentPreset);
-  const iptvPlayer = useIptv((state) => state.player);
-  const setIptvPlayer = useIptv((state) => state.setPlayer);
-  const resolvedAgent = resolveUserAgent(iptvPreset, iptvUserAgent);
 
   return (
     <>
@@ -301,75 +291,6 @@ export default function SettingsScreen() {
             <Button label={t("Jellyfin or Emby")} icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/jellyfin" as never)} />
             <Button label={t("Seerr or Overseerr")} icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/seerr" as never)} />
             <Button label="Tautulli" icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/tautulli" as never)} />
-            <Button label={t("Kodi remote")} icon="chevron-forward" variant="secondary" size="sm" onPress={() => router.push("/integrations/kodi" as never)} />
-          </SettingsSection>
-          </SettingsGroup>
-
-          <SettingsGroup title={t("Live TV and IPTV")}>
-          <SettingsSection title={t("Live TV")} icon="radio-outline">
-            <SettingsRow
-              label={t("Live TV")}
-              hint={t(
-                "Official free channels from France 24, DW and Al Jazeera. NASA+ and NHK WORLD-JAPAN open their official pages.",
-              )}
-            />
-            <Button
-              label={t("Live TV")}
-              icon="chevron-forward"
-              variant="secondary"
-              size="sm"
-              onPress={() => router.push("/live" as never)}
-            />
-          </SettingsSection>
-          <SettingsSection title="IPTV" icon="list-outline">
-            <SettingsRow
-              label="IPTV"
-              hint={t(
-                "CineLog does not include any playlist. Add your own M3U URL, M3U file, or Xtream login.",
-              )}
-            />
-            <Button
-              label="IPTV"
-              icon="chevron-forward"
-              variant="secondary"
-              size="sm"
-              onPress={() => router.push("/iptv" as never)}
-            />
-            <SettingsRow
-              label={t("User agent")}
-              hint={t("Playlist requests use this player name. Many servers refuse a browser name.")}
-            />
-            <View style={styles.pillRow}>
-              {IPTV_PRESETS.map((item) => (
-                <GenrePill
-                  key={item.id}
-                  label={item.label}
-                  selected={iptvPreset === item.id}
-                  onPress={() => setIptvPreset(item.id)}
-                />
-              ))}
-            </View>
-            {iptvPreset === "custom" ? (
-              <TextInput
-                value={iptvUserAgent}
-                onChangeText={setIptvUserAgent}
-                autoCapitalize="none"
-                autoCorrect={false}
-                placeholder="IPTVSmartersPlayer"
-                placeholderTextColor={colors.textMuted}
-                style={styles.input}
-              />
-            ) : (
-              <Text style={styles.rowHint}>{resolvedAgent}</Text>
-            )}
-            <SettingsRow
-              label={t("Player")}
-              hint={t("Media3 plays MPEG-TS, HLS, MP4 and MKV with the playlist headers.")}
-            />
-            <View style={styles.pillRow}>
-              <GenrePill label="Media3" selected={iptvPlayer !== "expo"} onPress={() => setIptvPlayer("media3")} />
-              <GenrePill label="Expo player" selected={iptvPlayer === "expo"} onPress={() => setIptvPlayer("expo")} />
-            </View>
           </SettingsSection>
           </SettingsGroup>
 
@@ -415,7 +336,7 @@ export default function SettingsScreen() {
             <SettingsRow
               label="CineLog"
               hint={t("Version {{version}}", {
-                version: Constants.expoConfig?.version ?? "1.0.43",
+                version: Constants.expoConfig?.version ?? "1.0.44",
               })}
             />
             <Button

@@ -22,9 +22,7 @@ export default function TabsLayout() {
   const pathname = usePathname();
   const user = useAuth((state) => state.user);
 
-  const activeRoute = pathname === "/iptv" || pathname.startsWith("/iptv/")
-    ? "/iptv"
-    : `/${pathname.split("/").filter(Boolean).pop() ?? "home"}`;
+  const activeRoute = `/${pathname.split("/").filter(Boolean).pop() ?? "home"}`;
 
   const navigate = useCallback((route: string) => {
     router.navigate(`/(tabs)${route}` as never);
@@ -69,8 +67,6 @@ export default function TabsLayout() {
         <Tabs.Screen name="home" options={{ title: "Home" }} />
         <Tabs.Screen name="movies" options={{ title: "Movies" }} />
         <Tabs.Screen name="series" options={{ title: "Series" }} />
-        <Tabs.Screen name="live" options={{ title: "Live TV" }} />
-        <Tabs.Screen name="iptv" options={{ title: "IPTV" }} />
         <Tabs.Screen name="search" options={{ title: "Search" }} />
         <Tabs.Screen name="watchlist" options={{ title: "Watchlist" }} />
       </Tabs>

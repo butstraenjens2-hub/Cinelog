@@ -18,7 +18,6 @@ export const SECRET = {
   jellyfinToken: "cinelog.jellyfin.token",
   seerrApiKey: "cinelog.seerr.apiKey",
   tautulliApiKey: "cinelog.tautulli.apiKey",
-  kodiPassword: "cinelog.kodi.password",
   simklAccessToken: "cinelog.simkl.accessToken",
   simklRefreshToken: "cinelog.simkl.refreshToken",
 } as const;

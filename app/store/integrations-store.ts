@@ -22,8 +22,6 @@ export interface IntegrationsState {
   libraryServerKind: LibraryServerKind;
   seerrUrl: string;
   tautulliUrl: string;
-  kodiUrl: string;
-  kodiUsername: string;
   simklClientId: string;
   simklExpiresAt: number;
   setSonarrUrl: (url: string) => void;
@@ -38,8 +36,6 @@ export interface IntegrationsState {
   setLibraryServerKind: (kind: LibraryServerKind) => void;
   setSeerrUrl: (url: string) => void;
   setTautulliUrl: (url: string) => void;
-  setKodiUrl: (url: string) => void;
-  setKodiUsername: (name: string) => void;
   setSimklClientId: (id: string) => void;
   setSimklExpiresAt: (epochMs: number) => void;
 }
@@ -59,8 +55,6 @@ export const useIntegrations = create<IntegrationsState>()(
       libraryServerKind: "jellyfin",
       seerrUrl: "",
       tautulliUrl: "",
-      kodiUrl: "",
-      kodiUsername: "",
       simklClientId: "",
       simklExpiresAt: 0,
       setSonarrUrl: (sonarrUrl) => set({ sonarrUrl: sonarrUrl.trim() }),
@@ -75,14 +69,39 @@ export const useIntegrations = create<IntegrationsState>()(
       setLibraryServerKind: (libraryServerKind) => set({ libraryServerKind }),
       setSeerrUrl: (seerrUrl) => set({ seerrUrl: seerrUrl.trim() }),
       setTautulliUrl: (tautulliUrl) => set({ tautulliUrl: tautulliUrl.trim() }),
-      setKodiUrl: (kodiUrl) => set({ kodiUrl: kodiUrl.trim() }),
-      setKodiUsername: (kodiUsername) => set({ kodiUsername: kodiUsername.trim() }),
       setSimklClientId: (simklClientId) => set({ simklClientId: simklClientId.trim() }),
       setSimklExpiresAt: (simklExpiresAt) => set({ simklExpiresAt }),
     }),
     {
       name: "cinelog.integrations.v1",
       storage: createJSONStorage(() => AsyncStorage),
+      // Older installs stored Kodi and other retired fields in this same key.
+      // Copy only the fields this version still uses and leave the rest unread.
+      merge: (persistedState, currentState) => {
+        const next = { ...currentState };
+        if (!persistedState || typeof persistedState !== "object") return next;
+        const saved = persistedState as Partial<IntegrationsState>;
+        const keys = [
+          "sonarrUrl",
+          "radarrUrl",
+          "traktClientId",
+          "traktExpiresAt",
+          "traktSyncWatchlist",
+          "traktSyncProgress",
+          "jellyfinUrl",
+          "jellyfinUserId",
+          "jellyfinServerName",
+          "libraryServerKind",
+          "seerrUrl",
+          "tautulliUrl",
+          "simklClientId",
+          "simklExpiresAt",
+        ] as const;
+        for (const key of keys) {
+          if (saved[key] !== undefined) next[key] = saved[key] as never;
+        }
+        return next;
+      },
     },
   ),
 );

@@ -72,7 +72,6 @@ function ThemedShell() {
           <Stack.Screen name="integrations/jellyfin" />
           <Stack.Screen name="integrations/seerr" />
           <Stack.Screen name="integrations/tautulli" />
-          <Stack.Screen name="integrations/kodi" />
           <Stack.Screen name="integrations/simkl" />
           <Stack.Screen name="integrations/profiles" />
           <Stack.Screen name="library/index" />

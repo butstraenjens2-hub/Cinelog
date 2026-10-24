@@ -3,7 +3,6 @@ import test from "node:test";
 
 import { buildIcs } from "./ics.mjs";
 import { directStreamPath, mediaBrowserAuthHeader } from "../jellyfin/urls.mjs";
-import { kodiRpc } from "../kodi/rpc.mjs";
 import { simklBucket } from "../simkl/map.mjs";
 
 test("buildIcs writes all-day events and drops incomplete rows", () => {
@@ -25,14 +24,9 @@ test("jellyfin direct stream stays on the server path and does not embed a key",
   const path = directStreamPath("abc/1", "src 2");
   assert.equal(path.includes("api_key"), false);
   assert.match(path, /^\/Videos\/abc%2F1\/stream\?static=true&MediaSourceId=src%202$/);
-  const header = mediaBrowserAuthHeader("1.0.43");
+  const header = mediaBrowserAuthHeader("1.0.44");
   assert.match(header, /Client="CineLog"/);
-  assert.match(header, /Version="1\.0\.43"/);
-});
-
-test("kodi rpc body is JSON-RPC 2.0 and omits empty params", () => {
-  assert.deepEqual(kodiRpc("JSONRPC.Ping"), { jsonrpc: "2.0", id: 1, method: "JSONRPC.Ping" });
-  assert.deepEqual(kodiRpc("Input.ExecuteAction", { action: "back" }, 4).params.action, "back");
+  assert.match(header, /Version="1\.0\.44"/);
 });
 
 test("simkl statuses map to watchlist or progress", () => {

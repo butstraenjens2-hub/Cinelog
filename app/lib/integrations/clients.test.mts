@@ -3,7 +3,6 @@ import test from "node:test";
 
 import { buildIcs } from "@/lib/calendar/ics.mjs";
 import { jellyfinReportProgress, jellyfinResume, jellyfinStreamUrl } from "@/lib/jellyfin/api";
-import { kodiMovies, kodiPlay, testKodi } from "@/lib/kodi/api";
 import { addMovieToRadarr } from "@/lib/radarr/api";
 import { requestOnSeerr, seerrSeasons, seerrServers } from "@/lib/seerr/api";
 import { SECRET, writeSecret } from "@/lib/secrets";
@@ -239,7 +238,7 @@ test("Jellyfin resume positions and progress stay on the server", async () => {
   assert.match(stream, /MediaSourceId=src%202/);
   for (const call of calls) {
     assert.equal(call.url.includes("jelly-token"), false);
-    assert.match(header(call.init, "X-Emby-Authorization"), /Version="1\.0\.43"/);
+    assert.match(header(call.init, "X-Emby-Authorization"), /Version="1\.0\.44"/);
     assert.equal(header(call.init, "X-Emby-Token"), "jelly-token");
   }
   const progress = calls.find((call) => call.url.includes("/Sessions/Playing/Progress"));
@@ -319,26 +318,6 @@ test("Tautulli lists sessions and stops one by session key", async () => {
   assert.ok(stop);
   assert.match(stop.url, /apikey=tautulli-key/);
   assert.match(stop.url, /session_key=99/);
-});
-
-test("Kodi lists movies and plays one without putting the password in the URL", async () => {
-  const calls = installFetch((url, init) => {
-    const body = JSON.parse(String(init.body));
-    if (body.method === "JSONRPC.Ping") return { body: { result: "pong" } };
-    if (body.method === "VideoLibrary.GetMovies") {
-      return { body: { result: { movies: [{ movieid: 4, title: "Film", year: 1999 }] } } };
-    }
-    return { body: { result: "OK" } };
-  });
-  assert.equal(await testKodi("http://kodi.local:8080", "kodi", "secret"), "pong");
-  const movies = await kodiMovies("http://kodi.local:8080", "kodi", "secret");
-  assert.equal(movies[0]?.title, "Film");
-  await kodiPlay("http://kodi.local:8080", "kodi", "secret", { movieid: 4 });
-  const open = calls.find((call) => String(call.init.body).includes("Player.Open"));
-  assert.ok(open);
-  assert.equal(open.url.includes("secret"), false);
-  assert.equal(header(open.init, "Authorization"), `Basic ${btoa("kodi:secret")}`);
-  assert.deepEqual(JSON.parse(String(open.init.body)).params.item, { movieid: 4 });
 });
 
 test("calendar export still escapes commas", () => {

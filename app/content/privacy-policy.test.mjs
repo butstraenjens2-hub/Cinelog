@@ -30,7 +30,6 @@ test("the privacy policy states the facts checked against the app", () => {
     "Jellyfin",
     "Overseerr",
     "Tautulli",
-    "Kodi",
     "SIMKL",
     "Trakt",
     "https://nexora-api-8xxb.onrender.com",

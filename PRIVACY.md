@@ -14,23 +14,22 @@ Questions about this notice or about your data can be sent as a GitHub issue: ht
 
 CineLog keeps your library on the device. That includes watchlists, favourites, ratings, watch history, episode progress, named lists, followed actors, studios and networks, household profiles, appearance and notification settings, and recent searches. A local display name and email are stored if you create a local profile. The password typed for a local profile is not saved.
 
-API keys and tokens for Sonarr, Radarr, Jellyfin or Emby, Overseerr or Seerr, Tautulli, Kodi, SIMKL, and Trakt, and the password for an Xtream playlist, are stored in the device keystore. Server addresses, a Trakt or SIMKL client id, and a Kodi username are stored in ordinary app storage.
+API keys and tokens for Sonarr, Radarr, Jellyfin or Emby, Overseerr or Seerr, Tautulli, SIMKL, and Trakt are stored in the device keystore. Server addresses and a Trakt or SIMKL client id are stored in ordinary app storage.
 
-An IPTV playlist you add is stored on the device, including the playlist address. That address can contain a username and password. CineLog does not ship a playlist of its own.
+Older versions could store an IPTV playlist or a Kodi password on the device. This version does not read those values.
 
 Suggestions based on your ratings and history are calculated on the device. Reminders are scheduled on the device and are not sent to a push service.
 
 ## Services the app contacts
 
-The Movie Database (TMDB) supplies titles, artwork, cast, and where-to-watch data. A build that includes a TMDB key talks to api.themoviedb.org and image.tmdb.org. A build without that key, which is the default configuration in this repository, sends catalogue requests and a startup health check to a proxy the developer runs at https://nexora-api-8xxb.onrender.com, and that proxy asks TMDB. The proxy is not an account system, an advertising network, or an analytics product. A request includes the catalogue path, such as a search or a title id. The proxy log can include the path, the time, the status, and the IP address of the connection. Your watchlist, IPTV playlist, and integration keys are not sent to that proxy.
+The Movie Database (TMDB) supplies titles, artwork, cast, and where-to-watch data. A build that includes a TMDB key talks to api.themoviedb.org and image.tmdb.org. A build without that key, which is the default configuration in this repository, sends catalogue requests and a startup health check to a proxy the developer runs at https://nexora-api-8xxb.onrender.com, and that proxy asks TMDB. The proxy is not an account system, an advertising network, or an analytics product. A request includes the catalogue path, such as a search or a title id. The proxy log can include the path, the time, the status, and the IP address of the connection. Your watchlist and integration keys are not sent to that proxy.
 
 A trailer uses YouTube’s embedded player. YouTube’s own policy applies when the player loads.
 
 SIMKL (api.simkl.com) and Trakt (api.trakt.tv) are contacted only after you connect an account, and only to read or update the lists, progress, and ratings you chose to sync.
 
-Sonarr, Radarr, Jellyfin, Emby, Overseerr, Seerr, Tautulli, and Kodi are contacted only at the address you enter, with the key or password you stored.
+Sonarr, Radarr, Jellyfin, Emby, Overseerr, Seerr, and Tautulli are contacted only at the address you enter, with the key you stored.
 
-Loading or playing an IPTV playlist contacts the host in that playlist. The built-in Live TV buttons open the official streams or pages of those broadcasters.
 
 On launch the app can ask Expo, at https://u.expo.dev, whether a newer copy of the app bundle is published. That request carries the platform, the runtime version, and the update channel. It does not include your watchlist or server keys.
 
@@ -40,7 +39,7 @@ A Letterboxd import reads a CSV file you pick. It is not uploaded. A button can 
 
 ## Legal basis
 
-Providing the library, a server you connected, or a playlist you added is necessary for the service you asked for (Article 6(1)(b) GDPR).
+Providing the library, or a server you connected, is necessary for the service you asked for (Article 6(1)(b) GDPR).
 
 Connecting an optional account, and allowing notifications, follows your action and the system permission (Article 6(1)(a) GDPR). You can disconnect the account or turn the permission off.
 
@@ -70,7 +69,7 @@ Data on the device stays until you delete it in the app, clear the app’s stora
 
 ## Deleting your data
 
-Settings can clear watch history, or erase the local library and sign you out. Clearing the app’s storage, or uninstalling the app, removes the local library, settings, playlist, and the keystore secrets held for CineLog. Disconnecting SIMKL, Trakt, or another service stops future sync from CineLog. Data already stored by that service stays under that service’s policy.
+Settings can clear watch history, or erase the local library and sign you out. Clearing the app’s storage, or uninstalling the app, removes the local library, settings, and the keystore secrets held for CineLog. Disconnecting SIMKL, Trakt, or another service stops future sync from CineLog. Data already stored by that service stays under that service’s policy.
 
 ## Children
 
@@ -78,7 +77,7 @@ CineLog is not directed at children under 16. The developer does not knowingly c
 
 ## Security
 
-The integration secrets named above are placed in the platform keystore. Catalogue calls use HTTPS. A playlist host you enter may be plain HTTP when that host only offers HTTP. No method of storage is perfect.
+The integration secrets named above are placed in the platform keystore. Catalogue calls use HTTPS. A media server you enter may be plain HTTP when that server only offers HTTP. No method of storage is perfect.
 
 ## Changes
 
@@ -112,23 +111,22 @@ Vragen over dit bericht of over uw gegevens kunnen als GitHub-issue worden gestu
 
 CineLog bewaart uw bibliotheek op het toestel. Dat omvat kijklijsten, favorieten, scores, kijkgeschiedenis, voortgang per aflevering, benoemde lijsten, gevolgde acteurs, studio's en zenders, huishoudprofielen, weergave- en meldingsinstellingen, en recente zoekopdrachten. Een lokale weergavenaam en e-mail worden bewaard als u een lokaal profiel maakt. Het wachtwoord dat u voor een lokaal profiel typt, wordt niet opgeslagen.
 
-API-sleutels en tokens voor Sonarr, Radarr, Jellyfin of Emby, Overseerr of Seerr, Tautulli, Kodi, SIMKL en Trakt, en het wachtwoord van een Xtream-afspeellijst, staan in de sleutelkluis van het toestel. Serveradressen, een Trakt- of SIMKL-client-id en een Kodi-gebruikersnaam staan in gewone app-opslag.
+API-sleutels en tokens voor Sonarr, Radarr, Jellyfin of Emby, Overseerr of Seerr, Tautulli, SIMKL en Trakt staan in de sleutelkluis van het toestel. Serveradressen en een Trakt- of SIMKL-client-id staan in gewone app-opslag.
 
-Een IPTV-afspeellijst die u toevoegt, blijft op het toestel, inclusief het adres van de lijst. Dat adres kan een gebruikersnaam en een wachtwoord bevatten. CineLog levert zelf geen afspeellijst mee.
+Oudere versies konden een IPTV-afspeellijst of een Kodi-wachtwoord op het toestel bewaren. Deze versie leest die waarden niet.
 
 Suggesties op basis van uw scores en geschiedenis worden op het toestel berekend. Herinneringen worden op het toestel gepland en niet naar een pushdienst gestuurd.
 
 ## Diensten die de app contacteert
 
-The Movie Database (TMDB) levert titels, afbeeldingen, cast en waar-te-kijken-gegevens. Een build met een TMDB-sleutel spreekt api.themoviedb.org en image.tmdb.org aan. Een build zonder die sleutel, de standaard in deze repository, stuurt catalogusverzoeken en een health-check bij het opstarten naar een proxy die de ontwikkelaar draait op https://nexora-api-8xxb.onrender.com, en die proxy vraagt TMDB. De proxy is geen accountsysteem, geen advertentienetwerk en geen analyseproduct. Een verzoek bevat het cataloguspad, bijvoorbeeld een zoekopdracht of een titel-id. Het logboek van de proxy kan het pad, het tijdstip, de status en het IP-adres van de verbinding bevatten. Uw kijklijst, IPTV-afspeellijst en integratiesleutels gaan niet naar die proxy.
+The Movie Database (TMDB) levert titels, afbeeldingen, cast en waar-te-kijken-gegevens. Een build met een TMDB-sleutel spreekt api.themoviedb.org en image.tmdb.org aan. Een build zonder die sleutel, de standaard in deze repository, stuurt catalogusverzoeken en een health-check bij het opstarten naar een proxy die de ontwikkelaar draait op https://nexora-api-8xxb.onrender.com, en die proxy vraagt TMDB. De proxy is geen accountsysteem, geen advertentienetwerk en geen analyseproduct. Een verzoek bevat het cataloguspad, bijvoorbeeld een zoekopdracht of een titel-id. Het logboek van de proxy kan het pad, het tijdstip, de status en het IP-adres van de verbinding bevatten. Uw kijklijst en integratiesleutels gaan niet naar die proxy.
 
 Een trailer gebruikt de ingesloten speler van YouTube. Het beleid van YouTube geldt zodra de speler laadt.
 
 SIMKL (api.simkl.com) en Trakt (api.trakt.tv) worden alleen gecontacteerd nadat u een account koppelt, en alleen om de lijsten, voortgang en scores te lezen of bij te werken die u koos om te synchroniseren.
 
-Sonarr, Radarr, Jellyfin, Emby, Overseerr, Seerr, Tautulli en Kodi worden alleen gecontacteerd op het adres dat u invult, met de sleutel of het wachtwoord dat u bewaarde.
+Sonarr, Radarr, Jellyfin, Emby, Overseerr, Seerr en Tautulli worden alleen gecontacteerd op het adres dat u invult, met de sleutel die u bewaarde.
 
-Een IPTV-afspeellijst laden of afspelen contacteert de host in die lijst. De ingebouwde Live TV-knoppen openen de officiële streams of pagina’s van die omroepen.
 
 Bij het opstarten kan de app aan Expo, op https://u.expo.dev, vragen of een nieuwere bundel van de app is gepubliceerd. Dat verzoek bevat het platform, de runtimeversie en het updatekanaal. Het bevat niet uw kijklijst of serversleutels.
 
@@ -138,7 +136,7 @@ Een Letterboxd-import leest een CSV-bestand dat u kiest. Het wordt niet geüploa
 
 ## Rechtsgrond
 
-De bibliotheek, een server die u koppelde, of een afspeellijst die u toevoegde, is nodig voor de dienst die u vroeg (artikel 6, lid 1, b, AVG).
+De bibliotheek, of een server die u koppelde, is nodig voor de dienst die u vroeg (artikel 6, lid 1, b, AVG).
 
 Een optioneel account koppelen, en meldingen toestaan, volgt uw handeling en de systeemtoestemming (artikel 6, lid 1, a, AVG). U kunt het account loskoppelen of de toestemming uitzetten.
 
@@ -168,7 +166,7 @@ Gegevens op het toestel blijven staan tot u ze in de app wist, de opslag van de 
 
 ## Gegevens wissen
 
-In Instellingen kunt u de kijkgeschiedenis wissen, of de lokale bibliotheek wissen en afmelden. De opslag van de app wissen, of de app verwijderen, haalt de lokale bibliotheek, instellingen, afspeellijst en de sleutelkluisgegevens van CineLog weg. SIMKL, Trakt of een andere dienst loskoppelen stopt verdere synchronisatie vanuit CineLog. Gegevens die die dienst al bewaart, vallen onder het beleid van die dienst.
+In Instellingen kunt u de kijkgeschiedenis wissen, of de lokale bibliotheek wissen en afmelden. De opslag van de app wissen, of de app verwijderen, haalt de lokale bibliotheek, instellingen en de sleutelkluisgegevens van CineLog weg. SIMKL, Trakt of een andere dienst loskoppelen stopt verdere synchronisatie vanuit CineLog. Gegevens die die dienst al bewaart, vallen onder het beleid van die dienst.
 
 ## Kinderen
 
@@ -176,7 +174,7 @@ CineLog is niet gericht op kinderen jonger dan 16 jaar. De ontwikkelaar verzamel
 
 ## Beveiliging
 
-De genoemde integratiegeheimen staan in de sleutelkluis van het platform. Catalogusverzoeken gebruiken HTTPS. Een afspeellijst-host die u invult, kan gewoon HTTP zijn wanneer die host alleen HTTP aanbiedt. Geen opslagmethode is volmaakt.
+De genoemde integratiegeheimen staan in de sleutelkluis van het platform. Catalogusverzoeken gebruiken HTTPS. Een mediaserver die u invult, kan gewoon HTTP zijn wanneer die server alleen HTTP aanbiedt. Geen opslagmethode is volmaakt.
 
 ## Wijzigingen
 

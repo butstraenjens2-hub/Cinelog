@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.res.Configuration
 import java.io.File
 
-import com.cinelog.app.iptv.IptvPackage
 import com.cinelog.app.widget.CineLogWidgetPackage
 import com.facebook.react.PackageList
 import com.facebook.react.ReactApplication
@@ -31,7 +30,6 @@ class MainApplication : Application(), ReactApplication {
         override fun getPackages(): List<ReactPackage> =
             PackageList(this).packages.apply {
               add(CineLogWidgetPackage())
-              add(IptvPackage())
             }
 
           override fun getJSMainModuleName(): String = ".expo/.virtual-metro-entry"

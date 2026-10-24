@@ -12,6 +12,7 @@ import { HeroBanner } from "@/components/media/HeroBanner";
 import { PosterCard } from "@/components/media/PosterCard";
 import { UpNextCard } from "@/components/media/UpNextCard";
 import { MobileHeader } from "@/components/navigation/MobileHeader";
+import { Button } from "@/components/ui/Button";
 import { GenrePill } from "@/components/ui/GenrePill";
 import { Screen } from "@/components/ui/Screen";
 import { ErrorState } from "@/components/ui/States";
@@ -360,6 +361,18 @@ export default function HomeScreen() {
               keyExtractor={upNextKey}
               renderItem={renderUpNext}
             />
+          ) : null}
+
+          {tracked.tracked.length > 0 ? (
+            <View style={{ paddingHorizontal: gutter }}>
+              <Button
+                label={t("Airing schedule")}
+                icon="calendar-outline"
+                variant="secondary"
+                size="sm"
+                onPress={() => router.push("/schedule")}
+              />
+            </View>
           ) : null}
 
           {liked.seed && (liked.items.length > 0 || liked.isLoading) ? (

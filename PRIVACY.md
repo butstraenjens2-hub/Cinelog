@@ -12,7 +12,7 @@ Questions about this notice or about your data can be sent as a GitHub issue: ht
 
 ## Information stored on the device
 
-CineLog keeps your library on the device. That includes watchlists, favourites, ratings, watch history, episode progress, household profiles, appearance and notification settings, and recent searches. A local display name and email are stored if you create a local profile. The password typed for a local profile is not saved.
+CineLog keeps your library on the device. That includes watchlists, favourites, ratings, watch history, episode progress, named lists, followed actors, studios and networks, household profiles, appearance and notification settings, and recent searches. A local display name and email are stored if you create a local profile. The password typed for a local profile is not saved.
 
 API keys and tokens for Sonarr, Radarr, Jellyfin or Emby, Overseerr or Seerr, Tautulli, Kodi, SIMKL, and Trakt, and the password for an Xtream playlist, are stored in the device keystore. Server addresses, a Trakt or SIMKL client id, and a Kodi username are stored in ordinary app storage.
 
@@ -110,7 +110,7 @@ Vragen over dit bericht of over uw gegevens kunnen als GitHub-issue worden gestu
 
 ## Gegevens op het toestel
 
-CineLog bewaart uw bibliotheek op het toestel. Dat omvat kijklijsten, favorieten, scores, kijkgeschiedenis, voortgang per aflevering, huishoudprofielen, weergave- en meldingsinstellingen, en recente zoekopdrachten. Een lokale weergavenaam en e-mail worden bewaard als u een lokaal profiel maakt. Het wachtwoord dat u voor een lokaal profiel typt, wordt niet opgeslagen.
+CineLog bewaart uw bibliotheek op het toestel. Dat omvat kijklijsten, favorieten, scores, kijkgeschiedenis, voortgang per aflevering, benoemde lijsten, gevolgde acteurs, studio's en zenders, huishoudprofielen, weergave- en meldingsinstellingen, en recente zoekopdrachten. Een lokale weergavenaam en e-mail worden bewaard als u een lokaal profiel maakt. Het wachtwoord dat u voor een lokaal profiel typt, wordt niet opgeslagen.
 
 API-sleutels en tokens voor Sonarr, Radarr, Jellyfin of Emby, Overseerr of Seerr, Tautulli, Kodi, SIMKL en Trakt, en het wachtwoord van een Xtream-afspeellijst, staan in de sleutelkluis van het toestel. Serveradressen, een Trakt- of SIMKL-client-id en een Kodi-gebruikersnaam staan in gewone app-opslag.
 

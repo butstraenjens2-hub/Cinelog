@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ScrollView, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 
+import { AddToListButton } from "@/components/actions/AddToListButton";
 import {
   PlayButton,
   TrailerButton,
@@ -17,6 +18,7 @@ import { AddToServarrButton } from "@/components/integrations/AddToServarrButton
 import { RequestOnSeerrButton } from "@/components/integrations/RequestOnSeerrButton";
 import { WhereToWatch } from "@/components/media/WhereToWatch";
 import { EpisodeCard } from "@/components/media/EpisodeCard";
+import { CompanyLinks } from "@/components/media/CompanyLinks";
 import { PosterCard } from "@/components/media/PosterCard";
 import { TitleHero } from "@/components/media/TitleHero";
 import { FloatingBackButton } from "@/components/navigation/MobileHeader";
@@ -331,6 +333,7 @@ export default function SeriesDetailScreen() {
                 }
               />
               <WatchlistButton item={ref} size="lg" />
+              <AddToListButton item={ref} />
             </>
           }
         />
@@ -443,6 +446,12 @@ export default function SeriesDetailScreen() {
             </View>
           ) : null}
 
+          <CompanyLinks
+            title={t("Networks")}
+            companies={series.networkRefs}
+            kind="network"
+            gutter={gutter}
+          />
           <WhereToWatch type="series" tmdbId={series.tmdbId} gutter={gutter} />
 
           <View style={{ paddingHorizontal: gutter, gap: 8 }}>

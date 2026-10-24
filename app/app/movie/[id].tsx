@@ -2,6 +2,7 @@ import React, { useCallback, useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 
+import { AddToListButton } from "@/components/actions/AddToListButton";
 import {
   PlayButton,
   TrailerButton,
@@ -16,6 +17,7 @@ import { CastCard } from "@/components/media/CastCard";
 import { AddToServarrButton } from "@/components/integrations/AddToServarrButton";
 import { RequestOnSeerrButton } from "@/components/integrations/RequestOnSeerrButton";
 import { WhereToWatch } from "@/components/media/WhereToWatch";
+import { CompanyLinks } from "@/components/media/CompanyLinks";
 import { PosterCard } from "@/components/media/PosterCard";
 import { TitleHero } from "@/components/media/TitleHero";
 import { FloatingBackButton } from "@/components/navigation/MobileHeader";
@@ -167,6 +169,7 @@ export default function MovieDetailScreen() {
                 }
               />
               <WatchlistButton item={ref} size="lg" />
+              <AddToListButton item={ref} />
             </>
           }
         />
@@ -184,6 +187,12 @@ export default function MovieDetailScreen() {
           </View>
 
           <WhereToWatch type="movie" tmdbId={movie.tmdbId} gutter={gutter} />
+          <CompanyLinks
+            title={t("Studios")}
+            companies={movie.companies}
+            kind="studio"
+            gutter={gutter}
+          />
 
           <View style={{ paddingHorizontal: gutter, gap: 8 }}>
             <AddToServarrButton kind="radarr" tmdbId={movie.tmdbId} title={movie.title} />

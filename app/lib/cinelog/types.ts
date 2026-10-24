@@ -42,6 +42,12 @@ export interface CollectionRef {
   poster: string | null;
 }
 
+export interface CompanyRef {
+  id: number;
+  name: string;
+  logo: string | null;
+}
+
 export interface Movie extends MediaSummary {
   type: "movie";
   /** Minutes; 0 when unknown. */
@@ -54,6 +60,7 @@ export interface Movie extends MediaSummary {
   writers: string[];
   /** TMDB collection this film belongs to, when it is part of one. */
   collection: CollectionRef | null;
+  companies: CompanyRef[];
 }
 
 export interface SeasonSummary {
@@ -73,6 +80,7 @@ export interface Series extends MediaSummary {
   certification: string | null;
   imdbId: string | null;
   networks: string[];
+  networkRefs: CompanyRef[];
   creators: string[];
   /** Average episode runtime in minutes; 0 when unknown. */
   episodeRuntime: number;
@@ -155,6 +163,8 @@ export interface Person {
   knownForDepartment: string | null;
   photo: string | null;
   knownFor: MediaSummary[];
+  /** Dated credits when the catalogue sends them; otherwise the known-for list. */
+  filmography: MediaSummary[];
 }
 
 /** Detail payload for the movie/series pages. */

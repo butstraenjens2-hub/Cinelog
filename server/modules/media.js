@@ -107,6 +107,13 @@ function normalizeMovie(item, omdbData = null) {
           poster: imgUrl(item.belongs_to_collection.poster_path, "w500"),
         }
       : null,
+    companies: (item.production_companies ?? [])
+      .map((company) => ({
+        id: company.id,
+        name: company.name ?? "",
+        logo: imgUrl(company.logo_path, "w185"),
+      }))
+      .filter((company) => company.id && company.name),
     source: "tmdb",
   };
 
@@ -151,6 +158,13 @@ function normalizeSeries(item, omdbData = null) {
       name: s.name ?? `Season ${s.season_number}`,
     })),
     networks: (item.networks ?? []).map((n) => n.name),
+    networkRefs: (item.networks ?? [])
+      .map((network) => ({
+        id: network.id,
+        name: network.name ?? "",
+        logo: imgUrl(network.logo_path, "w185"),
+      }))
+      .filter((network) => network.id && network.name),
     nextEpisodeToAir: item.next_episode_to_air
       ? {
           airDate: item.next_episode_to_air.air_date ?? null,
@@ -210,6 +224,8 @@ function normalizePersonKnownForItem(item) {
     poster: imgUrl(item.poster_path, "w780"),
     backdrop: imgUrl(item.backdrop_path, "w1280"),
     year: (item.release_date ?? item.first_air_date ?? "").slice(0, 4) || null,
+    releaseDate: item.release_date ?? null,
+    firstAirDate: item.first_air_date ?? null,
     rating: item.vote_average ?? null,
     popularity: item.popularity ?? null,
     source: "tmdb",
@@ -230,6 +246,8 @@ function normalizeListItem(item) {
     poster: imgUrl(item.poster_path, "w780"),
     backdrop: imgUrl(item.backdrop_path, "w1280"),
     year: (item.release_date ?? item.first_air_date ?? "").slice(0, 4) || null,
+    releaseDate: item.release_date ?? null,
+    firstAirDate: item.first_air_date ?? null,
     rating: item.vote_average ?? null,
     genres: item.genre_ids ?? [],
     popularity: item.popularity ?? null,
@@ -818,6 +836,15 @@ router.get("/person/:id", async (req, res) => {
           knownForDepartment: data.known_for_department ?? null,
           profile: imgUrl(data.profile_path, "w780"),
           knownFor,
+          filmography: combinedCredits
+            .map(normalizePersonKnownForItem)
+            .filter((item) => item && (item.releaseDate || item.firstAirDate || item.year))
+            .sort((left, right) =>
+              String(right.releaseDate || right.firstAirDate || right.year).localeCompare(
+                String(left.releaseDate || left.firstAirDate || left.year),
+              ),
+            )
+            .slice(0, 40),
           source: "tmdb",
         };
       },

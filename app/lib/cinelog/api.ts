@@ -16,6 +16,7 @@ import { apiData, apiJson } from "@/lib/http";
 import { genreIdsFromNames, genreNames } from "@/lib/cinelog/genres";
 import type {
   CastMember,
+  CompanyRef,
   CrewMember,
   Episode,
   MediaSummary,
@@ -120,6 +121,26 @@ function toGenreIds(value: unknown): number[] {
       return 0;
     })
     .filter((id) => id > 0);
+}
+
+function parseCompanies(input: unknown): CompanyRef[] {
+  if (!Array.isArray(input)) return [];
+  const seen = new Set<number>();
+  const out: CompanyRef[] = [];
+  for (const entry of input) {
+    if (!entry || typeof entry !== "object") continue;
+    const raw = entry as RawRecord;
+    const id = num(raw.id);
+    const name = str(raw.name);
+    if (!id || !name || seen.has(id)) continue;
+    seen.add(id);
+    out.push({
+      id,
+      name,
+      logo: image(raw.logo ?? raw.logo_path, "w185"),
+    });
+  }
+  return out;
 }
 
 function toNames(value: unknown): string[] {
@@ -407,6 +428,7 @@ function parseMovieDetail(input: unknown): TitleDetail<Movie> {
     directors: jobNames(crew, "Director"),
     writers: jobNames(crew, "Writer", "Screenplay"),
     collection: parseCollection(raw.collection ?? raw.belongs_to_collection),
+    companies: parseCompanies(raw.companies ?? raw.production_companies),
   };
 
   return {
@@ -452,6 +474,13 @@ function parseSeriesDetail(input: unknown): TitleDetail<Series> {
           (raw.external_ids as RawRecord | undefined)?.imdb_id,
       ) || null,
     networks: toNames(raw.networks),
+    networkRefs: parseCompanies(
+      raw.networkRefs ??
+        (Array.isArray(raw.networks) &&
+        raw.networks.some((entry) => entry && typeof entry === "object")
+          ? raw.networks
+          : []),
+    ),
     creators: toNames(raw.created_by),
     episodeRuntime: num(raw.episodeRuntime) || num(runtimes[0]),
     lastAirDate: str(raw.lastAirDate ?? raw.last_air_date) || null,
@@ -987,6 +1016,9 @@ export async function fetchPerson(personId: number): Promise<Person> {
       str(raw.knownForDepartment ?? raw.known_for_department) || null,
     photo: image(raw.photo ?? raw.profile ?? raw.profile_path, "w500"),
     knownFor,
+    filmography: Array.isArray(raw.filmography)
+      ? parseSummaries(raw.filmography)
+      : knownFor,
   });
 
   if (hasDirectTmdbKey) {
@@ -994,6 +1026,7 @@ export async function fetchPerson(personId: number): Promise<Person> {
       append_to_response: "combined_credits",
     });
     const credits = (data.combined_credits as RawRecord | undefined)?.cast;
+    data.filmography = Array.isArray(credits) ? credits : [];
     const knownFor = presentable(
       parseSummaries(Array.isArray(credits) ? credits : []),
       false,
@@ -1023,6 +1056,42 @@ export async function fetchPrimaryTrailer(
     `/api/media/trailer/${apiType}/${tmdbId}`,
   );
   return data ? (parseTrailers([data])[0] ?? null) : null;
+}
+
+export async function fetchStudioTitles(companyId: number): Promise<MediaSummary[]> {
+  if (hasDirectTmdbKey) {
+    const data = await tmdbDirect<RawRecord>("/discover/movie", {
+      with_companies: companyId,
+      sort_by: "primary_release_date.desc",
+    });
+    return parseSummaries(data.results, "movie").slice(0, 24);
+  }
+  const data = await apiData<RawRecord>(
+    `/api/media/movies${query({
+      company_id: companyId,
+      sort: "primary_release_date.desc",
+      page: 1,
+    })}`,
+  );
+  return parseSummaries(data.results, "movie").slice(0, 24);
+}
+
+export async function fetchNetworkTitles(networkId: number): Promise<MediaSummary[]> {
+  if (hasDirectTmdbKey) {
+    const data = await tmdbDirect<RawRecord>("/discover/tv", {
+      with_networks: networkId,
+      sort_by: "first_air_date.desc",
+    });
+    return parseSummaries(data.results, "series").slice(0, 24);
+  }
+  const data = await apiData<RawRecord>(
+    `/api/media/series${query({
+      network_id: networkId,
+      sort: "first_air_date.desc",
+      page: 1,
+    })}`,
+  );
+  return parseSummaries(data.results, "series").slice(0, 24);
 }
 
 export { MIN_VOTES };

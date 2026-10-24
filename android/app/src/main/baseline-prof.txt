@@ -1,0 +1,7 @@
+Lcom/cinelog/app/MainActivity;
+Lcom/cinelog/app/MainApplication;
+SPLcom/cinelog/app/MainActivity;-><init>()V
+HSPLcom/cinelog/app/MainActivity;->onCreate(Landroid/os/Bundle;)V
+SPLcom/cinelog/app/MainApplication;-><init>()V
+HSPLcom/cinelog/app/MainApplication;->onCreate()V
+HSPLcom/facebook/react/ReactActivity;->onCreate(Landroid/os/Bundle;)V

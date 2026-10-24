@@ -9,6 +9,7 @@ import { SeoHead } from "@/components/SeoHead";
 import { FilterBar, type FilterOption } from "@/components/media/FilterBar";
 import { PosterGrid, usePosterMetrics } from "@/components/media/PosterGrid";
 import { MobileHeader } from "@/components/navigation/MobileHeader";
+import { Button } from "@/components/ui/Button";
 import { GenrePill } from "@/components/ui/GenrePill";
 import { Screen } from "@/components/ui/Screen";
 import { SearchBar } from "@/components/ui/SearchBar";
@@ -21,12 +22,24 @@ import { useResponsive } from "@/hooks/useResponsive";
 import { supportsPeopleSearch } from "@/lib/cinelog/api";
 import { openPerson, openTitle } from "@/lib/cinelog/navigation";
 import { useSearch } from "@/lib/cinelog/queries";
-import type { PersonResult } from "@/lib/cinelog/types";
+import type { MediaSummary, PersonResult } from "@/lib/cinelog/types";
 import { useAuth } from "@/store/auth-store";
 import { useLibrary } from "@/store/library-store";
 import { Pressable } from "@/components/ui/Pressable";
 
 type SearchTab = "all" | "movies" | "series" | "people";
+type SearchSort = "relevance" | "rating" | "year";
+
+const YEAR_FILTERS: { value: number | null; label: string }[] = [
+  { value: null, label: "Any year" },
+  { value: 2026, label: "2026" },
+  { value: 2025, label: "2025" },
+  { value: 2024, label: "2024" },
+  { value: 2020, label: "2020" },
+  { value: 2010, label: "2010" },
+  { value: 2000, label: "2000" },
+  { value: 1990, label: "1990" },
+];
 
 /** Evergreen suggestions shown before a viewer has typed anything. */
 const POPULAR_SEARCHES = [
@@ -49,14 +62,24 @@ export default function SearchScreen() {
 
   const [term, setTerm] = useState("");
   const [tab, setTab] = useState<SearchTab>("all");
+  const [year, setYear] = useState<number | null>(null);
+  const [sort, setSort] = useState<SearchSort>("relevance");
   const debounced = useDebouncedValue(term, 350);
 
   const recentSearches = useLibrary((state) => state.recentSearches);
   const addRecentSearch = useLibrary((state) => state.addRecentSearch);
   const clearRecentSearches = useLibrary((state) => state.clearRecentSearches);
 
-  const search = useSearch(debounced);
-  const results = search.data;
+  const search = useSearch(debounced, year);
+  const results = useMemo(() => {
+    if (!search.data) return undefined;
+    const rank = (items: MediaSummary[]) => {
+      if (sort === "rating") return [...items].sort((a, b) => b.rating - a.rating);
+      if (sort === "year") return [...items].sort((a, b) => b.year - a.year);
+      return items;
+    };
+    return { ...search.data, movies: rank(search.data.movies), series: rank(search.data.series) };
+  }, [search.data, sort]);
 
   // Only remember a term once it actually returned something.
   useEffect(() => {
@@ -135,12 +158,33 @@ export default function SearchScreen() {
         {hasQuery ? (
           <View style={styles.tabsBlock}>
             <FilterBar
-              options={tabs}
-              value={tab}
-              onChange={setTab}
+            options={tabs}
+            value={tab}
+            onChange={setTab}
+            gutter={gutter}
+            accessibilityLabel={t("Search result types")}
+          />
+            <FilterBar
+              options={[
+                { value: "relevance" as const, label: "Relevance" },
+                { value: "rating" as const, label: "Highest rated" },
+                { value: "year" as const, label: "Newest" },
+              ]}
+              value={sort}
+              onChange={setSort}
               gutter={gutter}
-              accessibilityLabel={t("Search result types")}
+              accessibilityLabel={t("Sort results")}
             />
+            <View style={[styles.pillRow, { paddingHorizontal: gutter }]}>
+              {YEAR_FILTERS.map((option) => (
+                <GenrePill
+                  key={option.label}
+                  label={t(option.label)}
+                  selected={year === option.value}
+                  onPress={() => setYear(option.value)}
+                />
+              ))}
+            </View>
           </View>
         ) : null}
 
@@ -247,6 +291,18 @@ export default function SearchScreen() {
                 message={t("Try an actor or director's full name.")}
               />
             ) : null}
+
+            {search.hasNextPage ? (
+              <View style={{ paddingHorizontal: gutter }}>
+                <Button
+                  label={search.isFetchingNextPage ? t("Loading") : t("Load more results")}
+                  variant="secondary"
+                  size="sm"
+                  loading={search.isFetchingNextPage}
+                  onPress={() => void search.fetchNextPage()}
+                />
+              </View>
+            ) : null}
           </View>
         )}
       </Screen>
@@ -300,6 +356,7 @@ function PersonRow({
           source={{ uri: person.photo }}
           style={styles.personPhoto}
           contentFit="cover"
+          cachePolicy="memory-disk"
         />
       ) : (
         <View style={[styles.personPhoto, styles.personFallback]}>

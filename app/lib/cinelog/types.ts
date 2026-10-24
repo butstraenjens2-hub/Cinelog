@@ -36,6 +36,18 @@ export interface MediaSummary {
   releaseDate: string | null;
 }
 
+export interface CollectionRef {
+  id: number;
+  name: string;
+  poster: string | null;
+}
+
+export interface CompanyRef {
+  id: number;
+  name: string;
+  logo: string | null;
+}
+
 export interface Movie extends MediaSummary {
   type: "movie";
   /** Minutes; 0 when unknown. */
@@ -46,6 +58,9 @@ export interface Movie extends MediaSummary {
   imdbId: string | null;
   directors: string[];
   writers: string[];
+  /** TMDB collection this film belongs to, when it is part of one. */
+  collection: CollectionRef | null;
+  companies: CompanyRef[];
 }
 
 export interface SeasonSummary {
@@ -65,6 +80,7 @@ export interface Series extends MediaSummary {
   certification: string | null;
   imdbId: string | null;
   networks: string[];
+  networkRefs: CompanyRef[];
   creators: string[];
   /** Average episode runtime in minutes; 0 when unknown. */
   episodeRuntime: number;
@@ -147,6 +163,8 @@ export interface Person {
   knownForDepartment: string | null;
   photo: string | null;
   knownFor: MediaSummary[];
+  /** Dated credits when the catalogue sends them; otherwise the known-for list. */
+  filmography: MediaSummary[];
 }
 
 /** Detail payload for the movie/series pages. */
@@ -170,6 +188,8 @@ export interface SearchResults {
   movies: MediaSummary[];
   series: MediaSummary[];
   people: PersonResult[];
+  page: number;
+  totalPages: number;
 }
 
 export interface PersonResult {
@@ -183,9 +203,20 @@ export interface PersonResult {
 // ── Browse filters ───────────────────────────────────────────────────────────
 
 export type MovieListKey =
-  "popular" | "trending" | "top_rated" | "now_playing" | "upcoming";
+  | "popular"
+  | "trending"
+  | "top_rated"
+  | "now_playing"
+  | "upcoming"
+  | "streaming_be";
 
-export type SeriesListKey = "popular" | "trending" | "top_rated" | "new_series";
+export type SeriesListKey =
+  | "popular"
+  | "trending"
+  | "top_rated"
+  | "new_series"
+  | "airing_today"
+  | "on_the_air";
 
 // ── User library ─────────────────────────────────────────────────────────────
 

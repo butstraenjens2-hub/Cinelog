@@ -64,8 +64,19 @@ function ThemedShell() {
           <Stack.Screen name="person/[id]" />
           <Stack.Screen name="profile" />
           <Stack.Screen name="settings" />
+          <Stack.Screen name="integrations/radarr" />
+          <Stack.Screen name="integrations/jellyfin" />
+          <Stack.Screen name="integrations/profiles" />
+          <Stack.Screen name="library/index" />
           <Stack.Screen name="addons" />
           <Stack.Screen name="legal" />
+          <Stack.Screen name="privacy" />
+          <Stack.Screen name="followed" />
+          <Stack.Screen name="schedule" />
+          <Stack.Screen name="company/[id]" />
+          <Stack.Screen name="lists/index" />
+          <Stack.Screen name="lists/[id]" />
+          <Stack.Screen name="lists/import" />
           <Stack.Screen name="import" />
           <Stack.Screen
             name="auth"

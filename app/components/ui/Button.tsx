@@ -72,7 +72,7 @@ export function Button({
       accessibilityLabel={label}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: isDisabled, busy: loading }}
-      style={({ pressed, hovered }) => [
+      style={({ pressed, hovered, focused }) => [
         styles.base,
         {
           height: metrics.height,
@@ -81,6 +81,7 @@ export function Button({
         },
         variantStyle(colors, variant, onArtwork),
         hovered && !isDisabled ? hoverStyle(colors, variant, onArtwork) : null,
+        focused && !isDisabled ? { borderWidth: 2, borderColor: colors.accent } : null,
         pressed ? styles.pressed : null,
         isDisabled ? styles.disabled : null,
         style,
